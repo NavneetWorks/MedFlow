@@ -1,5 +1,11 @@
 import { Resource, ResourceType, ResourceStatus, Specialization } from '../types/resource';
 
+export interface ResourceConfigItem {
+  type: ResourceType;
+  specialization?: Specialization | string;
+  count: number;
+}
+
 /**
  * ResourceManager manages live hospital resource states (In-Memory execution).
  */
@@ -69,6 +75,59 @@ export class ResourceManager {
       }
     }
     return counts;
+  }
+
+  /**
+   * Dynamic Resource Configuration method called via Socket event `resources:configure`.
+   * Configures resource counts for each type and specialization dynamically.
+   */
+  public updateInventoryConfig(configList: ResourceConfigItem[]): void {
+    if (!Array.isArray(configList) || configList.length === 0) return;
+
+    for (const item of configList) {
+      if (!item.type || typeof item.count !== 'number' || item.count < 0) continue;
+
+      // Find existing resources matching type & spec
+      const existing = Array.from(this.resources.values()).filter(
+        (r) => r.type === item.type && (item.specialization ? r.specialization === item.specialization : true)
+      );
+
+      const currentCount = existing.length;
+
+      if (item.count > currentCount) {
+        // Add new units
+        const diff = item.count - currentCount;
+        for (let i = 1; i <= diff; i++) {
+          const newId = `${item.type}-${item.specialization ?? 'GEN'}-${currentCount + i}`;
+          const newName = `${item.type} ${item.specialization ? item.specialization : ''} #${currentCount + i}`;
+          this.addResource(newId, newName, item.type, item.specialization);
+        }
+      } else if (item.count < currentCount) {
+        // Remove excess AVAILABLE units
+        const diff = currentCount - item.count;
+        let removed = 0;
+        for (const res of existing) {
+          if (res.status === 'AVAILABLE' && removed < diff) {
+            this.resources.delete(res.id);
+            removed++;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns full detailed list of all physical resources with live status.
+   */
+  public getDetailedInventoryState(): any[] {
+    return Array.from(this.resources.values()).map((r) => ({
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      specialization: r.specialization,
+      status: r.status,
+      currentPatientId: r.currentPatientId,
+    }));
   }
 
   /**

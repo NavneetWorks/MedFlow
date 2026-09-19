@@ -27,7 +27,7 @@ async function runSocketTest() {
     // Test emitting broadcast events from server to client
     setTimeout(() => {
       console.log('📡 [STEP 3/4] Triggering Server Broadcasts...');
-      emitSimTick({ currentTime: 5, eventCount: 1 });
+      emitSimTick({ simTimeMinutes: 5, waitingCount: 1, allocatedCount: 1 });
       emitPatientArrived({ id: 'P-101', name: 'Rahul Sharma', status: 'WAITING' });
       emitResourceStatusChanged({ resourceId: 'DOC-001', newStatus: 'BUSY', patientId: 'P-101' });
       emitMetricsUpdated({ avgWaitingTime: 12.5, queueLength: 3 });

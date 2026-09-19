@@ -3,8 +3,9 @@ import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRouter from './api/routes';
-import { initSocketGateway } from './websocket/socketGateway';
+import { initSocketGateway, setGlobalSimulationEngine } from './websocket/socketGateway';
 import { initDatabase } from './db/database';
+import { SimulationEngine } from './simulation/SimulationEngine';
 
 dotenv.config();
 
@@ -15,14 +16,18 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
+// Create Simulation Engine Instance
+export const simulationEngine = new SimulationEngine();
+
 // Attach API Router
 app.use('/api', apiRouter);
 
 // Create HTTP Server
 const server = http.createServer(app);
 
-// Initialize Socket.IO Real-Time Gateway
+// Initialize Socket.IO Real-Time Gateway & Wire Engine
 initSocketGateway(server);
+setGlobalSimulationEngine(simulationEngine);
 
 // Start Server
 server.listen(PORT, async () => {
