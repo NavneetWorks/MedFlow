@@ -10,24 +10,16 @@ const DEPARTMENTS = [
   'GENERAL_SURGERY', 'PULMONOLOGY', 'PEDIATRICS'
 ];
 
-function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
+function PatientSetup({ onDeploy, historyPatients }) {
   const [stagedPatients, setStagedPatients] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
 
-  useEffect(() => {
-    const handleHistory = (data) => setHistoryPatients(data);
-    socket.on('patients:history_response', handleHistory);
-    
-    // Only fetch if empty to prevent flashing on page switch
-    if (!historyPatients || historyPatients.length === 0) {
-      socket.emit('patients:history_request');
-    }
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
 
-    return () => socket.off('patients:history_response', handleHistory);
-  }, [historyPatients, setHistoryPatients]);
-  
   // Form State
   const [basicInfo, setBasicInfo] = useState({
     name: '', age: 30, department: '', arrivalTime: 0, 
@@ -393,6 +385,9 @@ function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
                     </div>
                     <div className="h-col status">
                       <span className={`status-badge ${p.status.toLowerCase()}`}>{p.status}</span>
+                      {p.priority_score !== undefined && p.priority_score !== null && (
+                        <span style={{fontSize: '11px', marginTop: '4px', display: 'block', color: 'var(--text-light)'}}>Score: {Number(p.priority_score).toFixed(1)}</span>
+                      )}
                     </div>
                     <div className="h-col action">
                       {isExpanded ? <ChevronUp size={16} color="#525252" /> : <ChevronDown size={16} color="#525252" />}

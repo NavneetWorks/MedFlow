@@ -16,6 +16,7 @@ export function useSimulationSocket() {
   });
 
   const [logs, setLogs] = useState([]);
+  const [historyPatients, setHistoryPatients] = useState([]);
 
   // --- Socket Listeners ---
   useEffect(() => {
@@ -63,9 +64,15 @@ export function useSimulationSocket() {
     socket.on('resource:status_changed', (data) => {
       addLog(`Resource ${data.resourceId} is now ${data.newStatus}`);
     });
+    
+    // 5. History / Submitted Patients
+    socket.on('patients:history_response', (data) => {
+      setHistoryPatients(data);
+    });
 
     // Request full state immediately in case we missed the on-connect emission
     socket.emit('request_initial_state');
+    socket.emit('patients:history_request');
 
     // Cleanup listeners on unmount
     return () => {
@@ -78,6 +85,7 @@ export function useSimulationSocket() {
       socket.off('patient:arrived');
       socket.off('patient:allocated');
       socket.off('resource:status_changed');
+      socket.off('patients:history_response');
     };
   }, []);
 
@@ -114,6 +122,7 @@ export function useSimulationSocket() {
     resourceDetailed,
     simState,
     logs,
+    historyPatients,
     
     // Expose Actions
     startSimulation,

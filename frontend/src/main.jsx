@@ -44,7 +44,7 @@ function Utilization({ used, total }) {
 }
 
 function App() {
-  const socketData = useSimulationSocket();
+  const { queue: liveQueue, historyPatients, ...socketData } = useSimulationSocket();
   
   // TEST: Log incoming data to browser console
   React.useEffect(() => {
@@ -58,7 +58,6 @@ function App() {
   const [showControls, setShowControls] = useState(true);
   const [page, setPage] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [historyPatients, setHistoryPatients] = useState([]);
   const queue = useMemo(() => {
     const urgency = { Urgent: 4, High: 3, Moderate: 2, Stable: 1 };
     const sorted = [...patients].sort((a, b) => {
@@ -129,7 +128,7 @@ function App() {
       </section>
 
       <section className="panel resource-panel"><div className="section-heading"><div><p className="eyebrow">RESOURCE CAPACITY</p><h2>Hospital utilization</h2></div><button className="link-button">View all resources <ArrowRight size={16}/></button></div><div className="resource-grid">{resources.map(r => { const Icon = r.icon; return <div className="resource" key={r.label}><div className="resource-title"><span className="resource-icon"><Icon size={19}/></span><span>{r.label}</span><b>{Math.round(r.used/r.total*100)}%</b></div><Utilization used={r.used} total={r.total}/></div>})}</div></section>
-      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : page === 'setup' ? <PatientSetup historyPatients={historyPatients} setHistoryPatients={setHistoryPatients} onDeploy={() => {}} /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
+      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : page === 'setup' ? <PatientSetup historyPatients={historyPatients} onDeploy={() => {}} /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
     </section>
   </main>;
 }
