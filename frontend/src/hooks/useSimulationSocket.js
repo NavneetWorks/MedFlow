@@ -6,6 +6,8 @@ export function useSimulationSocket() {
   const [queue, setQueue] = useState({});
   const [resourceStatus, setResourceStatus] = useState({});
   const [resourceDetailed, setResourceDetailed] = useState([]);
+  const [activeTreatments, setActiveTreatments] = useState([]);
+  const [completedPatients, setCompletedPatients] = useState([]);
   
   const [simState, setSimState] = useState({
     isRunning: false,
@@ -23,6 +25,14 @@ export function useSimulationSocket() {
     // 1. Queue Updates
     socket.on('queue:updated', (data) => {
       setQueue(data);
+    });
+
+    socket.on('sim:active_treatments', (data) => {
+      setActiveTreatments(data || []);
+    });
+
+    socket.on('sim:completed_treatments', (data) => {
+      setCompletedPatients(data || []);
     });
 
     // 2. Resource Updates
@@ -77,6 +87,8 @@ export function useSimulationSocket() {
     // Cleanup listeners on unmount
     return () => {
       socket.off('queue:updated');
+      socket.off('sim:active_treatments');
+      socket.off('sim:completed_treatments');
       socket.off('resources:status');
       socket.off('resources:detailed');
       socket.off('sim:tick');
@@ -119,6 +131,8 @@ export function useSimulationSocket() {
     queue,
     resourceStatus,
     resourceDetailed,
+    activeTreatments,
+    completedPatients,
     simState,
     logs,
     historyPatients,

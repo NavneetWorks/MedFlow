@@ -110,6 +110,7 @@ export class Scheduler {
           candidate.status = 'IN_TREATMENT';
           candidate.treatmentStartTime = currentSimTimeMinutes;
           candidate.treatmentEndTime = currentSimTimeMinutes + (candidate.treatmentDuration || 30);
+          (candidate as any).allocatedResourceIds = result.allocatedResourceIds;
           this.activeTreatments.push(candidate);
 
           successfulAllocations.push({

@@ -19,7 +19,12 @@ export class SimulationEngine {
   public metricsRepo: MetricsRepository;
 
   private completedCount: number = 0;
-  private onCycleCallback?: (summary: CycleSummary, fullQueuesState: Record<string, any[]>) => void;
+  private onCycleCallback?: (
+    summary: CycleSummary,
+    fullQueuesState: Record<string, any[]>,
+    activeTreatments: Patient[],
+    completedTreatments: Patient[]
+  ) => void;
   private scheduledPatients: any[] = [];
 
   constructor() {
@@ -40,7 +45,14 @@ export class SimulationEngine {
     this.resourceRepo.saveResourcesToDb(this.resourceManager.getAllResources()).catch(() => {});
   }
 
-  public setOnCycleCallback(callback: (summary: CycleSummary, fullQueuesState: Record<string, any[]>) => void): void {
+  public setOnCycleCallback(
+    callback: (
+      summary: CycleSummary,
+      fullQueuesState: Record<string, any[]>,
+      activeTreatments: Patient[],
+      completedTreatments: Patient[]
+    ) => void
+  ): void {
     this.onCycleCallback = callback;
   }
 
@@ -94,7 +106,12 @@ export class SimulationEngine {
     const summary = this.scheduler.runAllocationCycle(currentSimTime, [patient.department]);
 
     if (this.onCycleCallback) {
-      this.onCycleCallback(summary, this.queueManager.getAllDepartmentQueuesFull(currentSimTime));
+      this.onCycleCallback(
+        summary,
+        this.queueManager.getAllDepartmentQueuesFull(currentSimTime),
+        this.scheduler.getActiveTreatments(),
+        this.scheduler.getCompletedTreatments()
+      );
     }
 
     return { success: true, patient };
@@ -157,7 +174,12 @@ export class SimulationEngine {
     }
 
     if (this.onCycleCallback) {
-      this.onCycleCallback(summary, this.queueManager.getAllDepartmentQueuesFull(simTimeMinutes));
+      this.onCycleCallback(
+        summary,
+        this.queueManager.getAllDepartmentQueuesFull(simTimeMinutes),
+        this.scheduler.getActiveTreatments(),
+        this.scheduler.getCompletedTreatments()
+      );
     }
   }
 

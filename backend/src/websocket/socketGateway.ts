@@ -9,7 +9,7 @@ export function setGlobalSimulationEngine(engine: SimulationEngine): void {
   globalEngine = engine;
 
   // Wire Engine Callbacks to Socket IO Emissions
-  globalEngine.setOnCycleCallback((summary, fullQueuesState) => {
+  globalEngine.setOnCycleCallback((summary, fullQueuesState, activeTreatments, completedTreatments) => {
     if (!io || !globalEngine) return;
 
     // Broadcast Tick & Allocation Summary
@@ -19,8 +19,12 @@ export function setGlobalSimulationEngine(engine: SimulationEngine): void {
       allocatedCount: summary.successfulAllocations.length,
     });
 
-    // Broadcast Live Department Queues (Full detailed queue state for all 7 departments)
+    // Broadcast Live Department Queues
     io.emit('queue:updated', fullQueuesState);
+
+    // Broadcast Live RAM Active Treatments & Completed Treatments
+    io.emit('sim:active_treatments', activeTreatments);
+    io.emit('sim:completed_treatments', completedTreatments);
 
     // Broadcast Live Resource Inventory Counts & Detailed State
     io.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
@@ -176,6 +180,8 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       io?.emit('sim:tick', { simTimeMinutes: 0, waitingCount: 0, allocatedCount: 0 });
       if (globalEngine) {
         io?.emit('queue:updated', globalEngine.queueManager.getAllDepartmentQueuesFull(0));
+        io?.emit('sim:active_treatments', []);
+        io?.emit('sim:completed_treatments', []);
         io?.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
         io?.emit('resources:detailed', globalEngine.resourceManager.getDetailedInventoryState());
       }

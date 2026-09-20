@@ -28,6 +28,8 @@ export default function SimulationVisualizer() {
     historyPatients, 
     resourceStatus,
     resourceDetailed,
+    activeTreatments: liveActiveTreatments,
+    completedPatients: liveCompletedPatients,
     startSimulation, 
     pauseSimulation, 
     resetSimulation 
@@ -41,20 +43,23 @@ export default function SimulationVisualizer() {
     Object.values(queue || {}).flatMap(q => Array.isArray(q) ? q.map(p => p.id) : [])
   );
 
-  // Active treatments (Patients currently in treatment)
-  const activeTreatments = (historyPatients || []).filter(p => p.status === 'IN_TREATMENT');
+  // Active treatments (Patients currently in treatment from live RAM socket stream)
+  const activeTreatments = (liveActiveTreatments && liveActiveTreatments.length > 0) 
+    ? liveActiveTreatments 
+    : (historyPatients || []).filter(p => p.status === 'IN_TREATMENT');
   const activePatientIds = new Set(activeTreatments.map(p => p.id));
 
-  // Completed / Discharged Patients
-  const completedPatients = (historyPatients || []).filter(p => p.status === 'COMPLETED');
+  // Completed / Discharged Patients from live RAM socket stream
+  const completedPatients = (liveCompletedPatients && liveCompletedPatients.length > 0)
+    ? liveCompletedPatients
+    : (historyPatients || []).filter(p => p.status === 'COMPLETED');
   const completedPatientIds = new Set(completedPatients.map(p => p.id));
 
-  // Extract registered/incoming patients for the Intake Station Box (Excludes queued, active, completed)
-  const incomingPatients = (historyPatients || []).filter(
-    p => !queuedPatientIds.has(p.id) && !activePatientIds.has(p.id) && !completedPatientIds.has(p.id) && (
-      p.status === 'REGISTERED' || (p.arrivalTime !== undefined ? p.arrivalTime > simTime : (p.arrival_time > simTime))
-    )
-  );
+  // Extract registered/incoming patients for the Intake Station Box (ONLY future arrivals that have NOT reached arrivalTime yet)
+  const incomingPatients = (historyPatients || []).filter(p => {
+    const arrTime = p.arrivalTime ?? p.arrival_time ?? 0;
+    return arrTime > simTime && p.status === 'REGISTERED';
+  });
 
   // Helper to reliably extract priority score
   const getPatientScore = (p) => {
