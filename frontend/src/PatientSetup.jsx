@@ -16,9 +16,7 @@ function PatientSetup({ onDeploy, historyPatients }) {
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
 
-  const [expandedId, setExpandedId] = useState(null);
-  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
-  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+
 
   // Form State
   const [basicInfo, setBasicInfo] = useState({
