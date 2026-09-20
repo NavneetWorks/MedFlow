@@ -73,6 +73,9 @@ export class DepartmentQueueManager {
       return { success: false, errors: validation.errors };
     }
 
+    const pAny = patientInput as any;
+    const initialBase = patientInput.baseCriticalLevel ?? pAny.base_critical_level ?? patientInput.priorityScore ?? pAny.priority_score ?? patientInput.criticalLevel ?? pAny.critical_level;
+
     // 3. Build full Patient entity with defaults
     const fullPatient: Patient = {
       id: patientInput.id!,
@@ -84,14 +87,15 @@ export class DepartmentQueueManager {
       neurologySymptoms: patientInput.neurologySymptoms,
       pulmonologySymptoms: patientInput.pulmonologySymptoms,
       traumaSymptoms: patientInput.traumaSymptoms,
-      criticalLevel: patientInput.criticalLevel ?? 0,
+      baseCriticalLevel: initialBase,
+      criticalLevel: patientInput.criticalLevel ?? initialBase ?? 0,
       deteriorationRate: patientInput.deteriorationRate ?? 15,
       treatmentDuration: patientInput.treatmentDuration ?? 0,
       arrivalTime: patientInput.arrivalTime ?? currentSimTimeMinutes,
       waitingStartTime: patientInput.waitingStartTime ?? currentSimTimeMinutes,
       requiredResources: patientInput.requiredResources ?? [],
       status: 'WAITING',
-      priorityScore: 0,
+      priorityScore: patientInput.priorityScore ?? initialBase ?? 0,
     };
 
     // 4. Compute dynamic priority score

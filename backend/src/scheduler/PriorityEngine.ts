@@ -71,11 +71,22 @@ export function calculateDynamicPriorityScore(
   weights: PriorityWeights = DEFAULT_PRIORITY_WEIGHTS
 ): number {
   // 1. Initial Intake Clinical Score (C_intake)
-  const departmentResult = calculatePatientDepartmentScore(patient);
-  const C_intake = departmentResult.departmentScore;
+  let C_intake: number;
+  const pAny = patient as any;
+  const rawBase = patient.baseCriticalLevel ?? pAny.base_critical_level ?? patient.priorityScore ?? pAny.priority_score ?? patient.criticalLevel ?? pAny.critical_level;
+
+  if (typeof rawBase === 'number' && rawBase > 0) {
+    C_intake = rawBase;
+    patient.baseCriticalLevel = rawBase;
+  } else {
+    const departmentResult = calculatePatientDepartmentScore(patient);
+    C_intake = departmentResult.departmentScore;
+    patient.baseCriticalLevel = C_intake;
+  }
 
   // Set treatment duration if not fixed
   if (!patient.treatmentDuration || patient.treatmentDuration === 0) {
+    const departmentResult = calculatePatientDepartmentScore(patient);
     patient.treatmentDuration = departmentResult.estimatedDuration;
   }
 

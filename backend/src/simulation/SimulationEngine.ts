@@ -75,21 +75,26 @@ export class SimulationEngine {
 
     if (newPatients.length === 0) return;
 
-    const formatted = newPatients.map(p => ({
-      ...p,
-      id: p.id,
-      name: p.name,
-      age: p.age,
-      department: p.department,
-      vitals: typeof p.vitals === 'string' ? JSON.parse(p.vitals) : (p.vitals || {}),
-      criticalLevel: p.criticalLevel ?? p.critical_level ?? 50,
-      deteriorationRate: p.deteriorationRate ?? p.deterioration_rate ?? 15,
-      treatmentDuration: p.treatmentDuration ?? p.treatment_duration ?? 30,
-      arrivalTime: p.arrivalTime ?? p.arrival_time ?? 0,
-      priorityScore: p.priorityScore ?? p.priority_score ?? 50,
-      status: p.status || 'REGISTERED',
-      requiredResources: p.requiredResources ?? (typeof p.required_resources === 'string' ? JSON.parse(p.required_resources) : p.required_resources) ?? []
-    }));
+    const formatted = newPatients.map(p => {
+      const pAny = p as any;
+      const initialScore = p.priorityScore ?? pAny.priority_score ?? p.criticalLevel ?? pAny.critical_level ?? p.baseCriticalLevel ?? pAny.base_critical_level;
+      return {
+        ...p,
+        id: p.id,
+        name: p.name,
+        age: p.age,
+        department: p.department,
+        vitals: typeof p.vitals === 'string' ? JSON.parse(p.vitals) : (p.vitals || {}),
+        baseCriticalLevel: p.baseCriticalLevel ?? pAny.base_critical_level ?? initialScore,
+        criticalLevel: p.criticalLevel ?? pAny.critical_level ?? initialScore,
+        deteriorationRate: p.deteriorationRate ?? pAny.deterioration_rate ?? 15,
+        treatmentDuration: p.treatmentDuration ?? pAny.treatment_duration ?? 30,
+        arrivalTime: p.arrivalTime ?? pAny.arrival_time ?? 0,
+        priorityScore: initialScore,
+        status: p.status || 'REGISTERED',
+        requiredResources: p.requiredResources ?? (typeof pAny.required_resources === 'string' ? JSON.parse(pAny.required_resources) : pAny.required_resources) ?? []
+      };
+    });
 
     this.scheduledPatients.push(...formatted);
     console.log(`[SimulationEngine] Buffered ${formatted.length} new unique patients in RAM for future arrival injection.`);
@@ -141,7 +146,9 @@ export class SimulationEngine {
     this.scheduledPatients = this.scheduledPatients.filter(p => (p.arrivalTime ?? p.arrival_time ?? 0) > simTimeMinutes);
 
     for (const patient of arrivedPatients) {
+      const pAny = patient as any;
       const symptomsJson = typeof patient.symptoms === 'string' ? JSON.parse(patient.symptoms) : (patient.symptoms || {});
+      const initialScore = patient.priorityScore ?? pAny.priority_score ?? patient.criticalLevel ?? pAny.critical_level ?? patient.baseCriticalLevel ?? pAny.base_critical_level;
       const patientData = {
         ...patient,
         id: patient.id,
@@ -153,11 +160,12 @@ export class SimulationEngine {
         neurologySymptoms: patient.neurologySymptoms ?? symptomsJson.neurology,
         pulmonologySymptoms: patient.pulmonologySymptoms ?? symptomsJson.pulmonology,
         traumaSymptoms: patient.traumaSymptoms ?? symptomsJson.trauma,
-        criticalLevel: patient.criticalLevel ?? patient.critical_level ?? 50,
-        deteriorationRate: patient.deteriorationRate ?? patient.deterioration_rate ?? 15,
-        treatmentDuration: patient.treatmentDuration ?? patient.treatment_duration ?? 30,
-        arrivalTime: patient.arrivalTime ?? patient.arrival_time ?? 0,
-        priorityScore: patient.priorityScore ?? patient.priority_score ?? 50,
+        baseCriticalLevel: patient.baseCriticalLevel ?? pAny.base_critical_level ?? initialScore,
+        criticalLevel: patient.criticalLevel ?? pAny.critical_level ?? initialScore,
+        deteriorationRate: patient.deteriorationRate ?? pAny.deterioration_rate ?? 15,
+        treatmentDuration: patient.treatmentDuration ?? pAny.treatment_duration ?? 30,
+        arrivalTime: patient.arrivalTime ?? pAny.arrival_time ?? 0,
+        priorityScore: initialScore,
         status: 'WAITING',
       };
       this.queueManager.enqueuePatient(patientData, simTimeMinutes);

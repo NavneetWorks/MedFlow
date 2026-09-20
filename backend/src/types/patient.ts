@@ -76,6 +76,7 @@ export interface Patient {
   pulmonologySymptoms?: PulmonologySymptoms;
   traumaSymptoms?: TraumaSymptoms;
   criticalLevel: number;        // 0 – 100 (Derived from Department Intake Score + NEWS2)
+  baseCriticalLevel?: number;   // Original intake score before wait-time deterioration
   deteriorationRate: number;    // 0 – 100
   treatmentDuration: number;    // Minutes (Dynamically calculated based on department + vitals)
   arrivalTime: number;          // Simulation timestamp in minutes
