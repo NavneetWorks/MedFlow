@@ -40,11 +40,14 @@ export class Scheduler {
 
     this.activeTreatments = this.activeTreatments.filter((patient) => {
       const endTime = patient.treatmentEndTime ?? (patient.treatmentStartTime ?? currentSimTimeMinutes) + (patient.treatmentDuration || 30);
-      if (currentSimTimeMinutes >= endTime) {
+      // Instant discharge when currentSimTime reaches end time (within floating precision)
+      if (currentSimTimeMinutes >= (endTime - 0.001)) {
         patient.status = 'COMPLETED';
         this.allocator.releasePatientResources(patient.id);
         releasedDepts.add(patient.department);
-        this.completedTreatments.push(patient);
+        if (!this.completedTreatments.some((cp) => cp.id === patient.id)) {
+          this.completedTreatments.push(patient);
+        }
         return false;
       }
       return true;
@@ -102,6 +105,16 @@ export class Scheduler {
 
       // Scan waiting queue sequentially (High to Low Priority)
       for (const candidate of [...deptQueue]) {
+        // Guard: Skip if patient is ALREADY in active treatments or already completed
+        if (this.activeTreatments.some((ap) => ap.id === candidate.id)) {
+          this.queueManager.dequeuePatient(candidate.id);
+          continue;
+        }
+        if (this.completedTreatments.some((cp) => cp.id === candidate.id)) {
+          this.queueManager.dequeuePatient(candidate.id);
+          continue;
+        }
+
         const result: AllocationResult = this.allocator.allocateAtomic(candidate, currentSimTimeMinutes);
 
         if (result.allocated) {

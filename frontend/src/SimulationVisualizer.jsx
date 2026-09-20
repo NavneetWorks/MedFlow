@@ -226,24 +226,25 @@ export default function SimulationVisualizer() {
       <section className="queues-section-compact panel">
         <div className="compact-queues-list">
           {DEPARTMENTS.map(dept => {
-            const deptQueueList = Array.isArray(queue?.[dept.key]) ? queue[dept.key] : [];
-            const totalSlots = Math.max(14, deptQueueList.length + 2);
-            
+            const rawQueueList = Array.isArray(queue[dept.key]) ? queue[dept.key] : [];
+            const deptQueueList = Array.from(new Map(rawQueueList.map(p => [p.id, p])).values());
+            const totalSlots = 14;
+
             return (
-              <div className="compact-dept-row-micro" key={dept.key}>
-                <div className="micro-dept-label">
-                  <strong>{dept.label}</strong>
-                  <span className="micro-queue-badge">{deptQueueList.length} Waiting</span>
+              <div key={dept.key} className="department-track-row">
+                <div className="dept-track-label">
+                  <span className="dept-name-badge" style={{ background: dept.color }}>{dept.label}</span>
+                  <span className="waiting-count">{deptQueueList.length} Waiting</span>
                 </div>
 
-                <div className="micro-track-slots">
+                <div className="micro-slots-track">
                   {(() => {
                     const slots = [];
                     for (let i = 0; i < totalSlots; i++) {
                       const p = deptQueueList[i];
                       if (p) {
                         slots.push(
-                          <div key={p.id || i} className="micro-slot-box occupied">
+                          <div key={`${dept.key}-slot-${p.id}-${i}`} className="micro-slot-box occupied">
                             <span className="micro-idx">[{i}]</span>
                             <span className="micro-id">{p.id}</span>
                             <span className="micro-score">{getPatientScore(p)}</span>
@@ -276,7 +277,8 @@ export default function SimulationVisualizer() {
 
         <div className="treatment-columns-grid">
           {DEPARTMENTS.map(dept => {
-            const deptTreatments = activeTreatments.filter(p => p.department === dept.key);
+            const rawTreatments = activeTreatments.filter(p => p.department === dept.key);
+            const deptTreatments = Array.from(new Map(rawTreatments.map(p => [p.id, p])).values());
 
             return (
               <div key={dept.key} className="treatment-column-card" style={{ borderTopColor: dept.color }}>

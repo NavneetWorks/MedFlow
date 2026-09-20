@@ -60,7 +60,22 @@ export class SimulationEngine {
    * Buffers patients in RAM to be injected into the simulation at their specified arrivalTime.
    */
   public async schedulePatients(patients: any[]): Promise<void> {
-    const formatted = patients.map(p => ({
+    const activeTreatments = this.scheduler.getActiveTreatments();
+    const completedTreatments = this.scheduler.getCompletedTreatments();
+
+    const newPatients = patients.filter((p) => {
+      const pid = p.id;
+      if (!pid) return false;
+      if (this.scheduledPatients.some((sp) => sp.id === pid)) return false;
+      if (this.queueManager.hasPatient(pid)) return false;
+      if (activeTreatments.some((ap) => ap.id === pid)) return false;
+      if (completedTreatments.some((cp) => cp.id === pid)) return false;
+      return true;
+    });
+
+    if (newPatients.length === 0) return;
+
+    const formatted = newPatients.map(p => ({
       ...p,
       id: p.id,
       name: p.name,
@@ -77,7 +92,7 @@ export class SimulationEngine {
     }));
 
     this.scheduledPatients.push(...formatted);
-    console.log(`[SimulationEngine] Buffered ${formatted.length} patients in RAM for future arrival injection.`);
+    console.log(`[SimulationEngine] Buffered ${formatted.length} new unique patients in RAM for future arrival injection.`);
   }
 
   /**

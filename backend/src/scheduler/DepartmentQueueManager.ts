@@ -29,18 +29,51 @@ export class DepartmentQueueManager {
    * Enqueues a patient into their department-specific queue.
    * Performs validation first. If invalid, rejects and returns errors.
    */
+  public hasPatient(patientId: string): boolean {
+    for (const queue of this.queues.values()) {
+      if (queue.some((p) => p.id === patientId)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Enqueues a patient into their department-specific queue.
+   * Performs validation first. If invalid, rejects and returns errors.
+   * Prevents duplicate patient entries and preserves original waitingStartTime.
+   */
   public enqueuePatient(
     patientInput: Partial<Patient>,
     currentSimTimeMinutes: number = 0
   ): { success: boolean; patient?: Patient; errors?: string[] } {
-    // 1. Validate Input Payload
+    // 1. Check if patient already exists in queue -> update in-place without resetting waitingStartTime
+    const dept = patientInput.department!;
+    for (const queue of this.queues.values()) {
+      const existingIndex = queue.findIndex((p) => p.id === patientInput.id);
+      if (existingIndex !== -1) {
+        const existing = queue[existingIndex];
+        // Preserve original timestamps
+        const originalWaitingStart = existing.waitingStartTime ?? patientInput.waitingStartTime ?? currentSimTimeMinutes;
+        const originalArrival = existing.arrivalTime ?? patientInput.arrivalTime ?? currentSimTimeMinutes;
+
+        Object.assign(existing, {
+          ...patientInput,
+          arrivalTime: originalArrival,
+          waitingStartTime: originalWaitingStart,
+          status: 'WAITING',
+        });
+        calculateDynamicPriorityScore(existing, currentSimTimeMinutes);
+        sortPatientQueueByPriority(queue, currentSimTimeMinutes);
+        return { success: true, patient: existing };
+      }
+    }
+
+    // 2. Validate Input Payload for new patient
     const validation: ValidationResult = validatePatientInput(patientInput);
     if (!validation.valid) {
       return { success: false, errors: validation.errors };
     }
 
-    // 2. Build full Patient entity with defaults
-    const dept = patientInput.department!;
+    // 3. Build full Patient entity with defaults
     const fullPatient: Patient = {
       id: patientInput.id!,
       name: patientInput.name!,
@@ -61,10 +94,10 @@ export class DepartmentQueueManager {
       priorityScore: 0,
     };
 
-    // 3. Compute dynamic priority score
+    // 4. Compute dynamic priority score
     calculateDynamicPriorityScore(fullPatient, currentSimTimeMinutes);
 
-    // 4. Insert into Department Queue & Sort
+    // 5. Insert into Department Queue & Sort
     const deptQueue = this.queues.get(dept) ?? [];
     deptQueue.push(fullPatient);
     sortPatientQueueByPriority(deptQueue, currentSimTimeMinutes);
