@@ -109,7 +109,7 @@ export class ResourceAllocator {
         return [
           { resourceType: 'DOCTOR', specialization: 'CARDIOLOGY', quantity: 1 },
           { resourceType: isCritical ? 'ICU_BED' : 'BED', quantity: 1 },
-          { resourceType: 'EQUIPMENT', specialization: 'MONITOR', quantity: 1 },
+          { resourceType: 'EQUIPMENT', specialization: isCritical ? 'DEFIBRILLATOR' : 'ECG', quantity: 1 },
         ];
 
       case 'NEUROLOGY':
@@ -117,13 +117,14 @@ export class ResourceAllocator {
           { resourceType: 'DOCTOR', specialization: 'EMERGENCY', quantity: 1 },
           { resourceType: 'NURSE', specialization: 'ICU', quantity: 1 },
           { resourceType: isCritical ? 'ICU_BED' : 'BED', quantity: 1 },
+          { resourceType: 'EQUIPMENT', specialization: 'ECG', quantity: 1 },
         ];
 
       case 'PULMONOLOGY':
         return [
           { resourceType: 'DOCTOR', specialization: 'ICU', quantity: 1 },
           { resourceType: isCritical ? 'ICU_BED' : 'BED', quantity: 1 },
-          ...(isCritical ? [{ resourceType: 'VENTILATOR' as const, quantity: 1 }] : []),
+          { resourceType: 'EQUIPMENT', specialization: isCritical ? 'VENTILATOR' : 'OXYGEN', quantity: 1 },
         ];
 
       case 'ORTHOPEDICS':
@@ -132,6 +133,7 @@ export class ResourceAllocator {
           { resourceType: 'DOCTOR', specialization: 'SURGERY', quantity: 1 },
           { resourceType: 'NURSE', specialization: 'OT', quantity: 1 },
           { resourceType: 'BED', quantity: 1 },
+          { resourceType: 'EQUIPMENT', specialization: 'OT', quantity: 1 },
         ];
 
       case 'EMERGENCY_ER':
@@ -140,6 +142,7 @@ export class ResourceAllocator {
           { resourceType: 'DOCTOR', specialization: 'EMERGENCY', quantity: 1 },
           { resourceType: 'NURSE', specialization: 'GENERAL', quantity: 1 },
           { resourceType: 'BED', quantity: 1 },
+          { resourceType: 'EQUIPMENT', specialization: isCritical ? 'DEFIBRILLATOR' : 'OXYGEN', quantity: 1 },
         ];
     }
   }
