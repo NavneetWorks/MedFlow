@@ -126,7 +126,7 @@ function App() {
       </section>
 
       <section className="panel resource-panel"><div className="section-heading"><div><p className="eyebrow">RESOURCE CAPACITY</p><h2>Hospital utilization</h2></div><button className="link-button">View all resources <ArrowRight size={16}/></button></div><div className="resource-grid">{resources.map(r => { const Icon = r.icon; return <div className="resource" key={r.label}><div className="resource-title"><span className="resource-icon"><Icon size={19}/></span><span>{r.label}</span><b>{Math.round(r.used/r.total*100)}%</b></div><Utilization used={r.used} total={r.total}/></div>})}</div></section>
-      </> : page === 'queue' ? <LiveQueue patients={queue} strategy={strategy} surge={surge} failure={failure} onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
+      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
     </section>
   </main>;
 }
