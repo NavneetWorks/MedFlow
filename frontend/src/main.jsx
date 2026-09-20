@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import {
   Activity, AlertTriangle, Ambulance, ArrowRight, BedDouble, ChevronDown,
   CircleAlert, Clock3, Gauge, HeartPulse, Menu, MonitorCog, MoreHorizontal,
-  Play, Plus, ShieldAlert, Stethoscope, Users, X
+  Play, Plus, ShieldAlert, Stethoscope, Users, X, Settings
 } from 'lucide-react';
 import './styles.css';
 import LiveQueue from './LiveQueue';
@@ -81,7 +81,10 @@ function App() {
         <a className={page === 'operations' ? 'nav-active' : ''} onClick={() => setPage('operations')}><BedDouble size={18}/>Hospital Operations</a>
         <a className={page === 'analytics' ? 'nav-active' : ''} onClick={() => setPage('analytics')}><MonitorCog size={18}/>Analytics</a>
       </nav>
-      <div className="sidebar-bottom"><a><CircleAlert size={18}/>Alerts <span className="alert-dot"/></a><a onClick={() => setShowResourceSidebar(true)} style={{cursor: 'pointer'}}><Menu size={18}/>Settings</a></div>
+      <div className="sidebar-bottom">
+        <a><CircleAlert size={18}/>Alerts <span className="alert-dot"/></a>
+        <a onClick={() => setShowResourceSidebar(true)} style={{cursor: 'pointer'}}><Settings size={18}/>Resource Mgmt</a>
+      </div>
     </aside>
 
     <section className="shell">
