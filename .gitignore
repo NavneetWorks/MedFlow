@@ -4,6 +4,8 @@ node_modules/
 
 # Environment & Secrets
 .env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
@@ -14,6 +16,7 @@ dist/
 build/
 out/
 .next/
+.vite/
 
 # Logs & Temporary Files
 *.log
