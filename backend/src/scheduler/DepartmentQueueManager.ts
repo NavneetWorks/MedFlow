@@ -213,4 +213,25 @@ export class DepartmentQueueManager {
     }
     return summary;
   }
+
+  /**
+   * Prints complete live queues state with scores, base levels, and wait times separated by |
+   */
+  public logAllQueues(currentSimTimeMinutes: number): void {
+    console.log(`\n=================== [SIM TICK ${currentSimTimeMinutes} MIN] LIVE QUEUES ===================`);
+    let totalWaiting = 0;
+    for (const [dept, queue] of this.queues.entries()) {
+      totalWaiting += queue.length;
+      if (queue.length > 0) {
+        const queueStr = queue
+          .map((p, idx) => `[${idx}] ${p.id} | Score: ${p.priorityScore} | Base: ${p.baseCriticalLevel ?? '-'} | Wait: ${Math.max(0, currentSimTimeMinutes - (p.waitingStartTime ?? currentSimTimeMinutes))}m`)
+          .join('  ||  ');
+        console.log(`📍 ${dept} (${queue.length} Waiting): ${queueStr}`);
+      }
+    }
+    if (totalWaiting === 0) {
+      console.log(` (No patients in any queue)`);
+    }
+    console.log(`=========================================================================\n`);
+  }
 }

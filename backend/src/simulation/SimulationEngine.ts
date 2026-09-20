@@ -173,6 +173,7 @@ export class SimulationEngine {
 
     // 1. Recalculate Dynamic Priority Scores & Re-Sort Queues in RAM
     this.queueManager.recalculateAndSortAll(simTimeMinutes);
+    this.queueManager.logAllQueues(simTimeMinutes);
 
     // 2. Check for Completed Treatments & Release Resources
     const freedDepartments = this.scheduler.checkAndReleaseCompletedTreatments(simTimeMinutes);
