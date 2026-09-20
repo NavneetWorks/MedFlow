@@ -44,7 +44,17 @@ export class ResourceManager {
   ): Resource[] {
     return Array.from(this.resources.values()).filter((r) => {
       if (r.type !== type || r.status !== 'AVAILABLE') return false;
-      if (specialization && r.specialization !== specialization) return false;
+      if (specialization) {
+        const sTarget = String(specialization).toUpperCase();
+        const sResource = String(r.specialization || '').toUpperCase();
+        if (sResource !== sTarget) {
+          if (sTarget === 'EMERGENCY_ER' && (sResource === 'EMERGENCY' || sResource === 'ER')) return true;
+          if (sTarget === 'EMERGENCY' && sResource === 'EMERGENCY_ER') return true;
+          if (sTarget === 'GENERAL_SURGERY' && (sResource === 'SURGERY' || sResource === 'GENERAL')) return true;
+          if (sTarget === 'SURGERY' && sResource === 'GENERAL_SURGERY') return true;
+          return false;
+        }
+      }
       return true;
     });
   }
@@ -134,49 +144,67 @@ export class ResourceManager {
   }
 
   /**
-   * Loads default hospital inventory into memory.
+   * Loads default hospital inventory into memory matching header breakdown.
    */
   public seedDefaultInventory(): void {
     this.clear();
 
-    // 1. Doctors (Cardiology, Surgery, Emergency, General, ICU)
-    this.addResource('DOC-001', 'Dr. Sharma', 'DOCTOR', 'CARDIOLOGY');
-    this.addResource('DOC-002', 'Dr. Kumar', 'DOCTOR', 'SURGERY');
-    this.addResource('DOC-003', 'Dr. Verma', 'DOCTOR', 'EMERGENCY');
-    this.addResource('DOC-004', 'Dr. Patel', 'DOCTOR', 'GENERAL');
-    this.addResource('DOC-005', 'Dr. Gupta', 'DOCTOR', 'ICU');
+    // 1. Doctors (13 Doctors across 7 Departments)
+    this.addResource('DOC-ER-1', 'Dr. ER Specialist 1', 'DOCTOR', 'EMERGENCY_ER');
+    this.addResource('DOC-ER-2', 'Dr. ER Specialist 2', 'DOCTOR', 'EMERGENCY_ER');
+    this.addResource('DOC-ER-3', 'Dr. ER Specialist 3', 'DOCTOR', 'EMERGENCY_ER');
 
-    // 2. Nurses (ICU, OT, General)
-    this.addResource('NUR-001', 'Nurse Anita', 'NURSE', 'ICU');
-    this.addResource('NUR-002', 'Nurse Sunita', 'NURSE', 'ICU');
-    this.addResource('NUR-003', 'Nurse Priya', 'NURSE', 'OT');
-    this.addResource('NUR-004', 'Nurse Rahul', 'NURSE', 'GENERAL');
-    this.addResource('NUR-005', 'Nurse Vikas', 'NURSE', 'GENERAL');
+    this.addResource('DOC-CARD-1', 'Dr. Sharma (Cardio 1)', 'DOCTOR', 'CARDIOLOGY');
+    this.addResource('DOC-CARD-2', 'Dr. Varma (Cardio 2)', 'DOCTOR', 'CARDIOLOGY');
 
-    // 3. Beds & ICU Beds
-    this.addResource('ICU-001', 'ICU Bed 1', 'ICU_BED', 'ICU');
-    this.addResource('ICU-002', 'ICU Bed 2', 'ICU_BED', 'ICU');
-    this.addResource('ICU-003', 'ICU Bed 3', 'ICU_BED', 'ICU');
-    this.addResource('BED-001', 'General Bed 1', 'BED', 'GENERAL');
-    this.addResource('BED-002', 'General Bed 2', 'BED', 'GENERAL');
-    this.addResource('BED-003', 'General Bed 3', 'BED', 'GENERAL');
-    this.addResource('BED-004', 'General Bed 4', 'BED', 'GENERAL');
+    this.addResource('DOC-NEURO-1', 'Dr. Roy (Neuro 1)', 'DOCTOR', 'NEUROLOGY');
+    this.addResource('DOC-NEURO-2', 'Dr. Sen (Neuro 2)', 'DOCTOR', 'NEUROLOGY');
 
-    // 4. Operating Theatres & Critical Equipment
+    this.addResource('DOC-ORTHO-1', 'Dr. Kapoor (Ortho 1)', 'DOCTOR', 'ORTHOPEDICS');
+    this.addResource('DOC-ORTHO-2', 'Dr. Joshi (Ortho 2)', 'DOCTOR', 'ORTHOPEDICS');
+
+    this.addResource('DOC-SURG-1', 'Dr. Kumar (Surgery 1)', 'DOCTOR', 'GENERAL_SURGERY');
+    this.addResource('DOC-SURG-2', 'Dr. Patel (Surgery 2)', 'DOCTOR', 'GENERAL_SURGERY');
+
+    this.addResource('DOC-PULMO-1', 'Dr. Gupta (Pulmo)', 'DOCTOR', 'PULMONOLOGY');
+
+    this.addResource('DOC-PEDIA-1', 'Dr. Singh (Pedia)', 'DOCTOR', 'PEDIATRICS');
+
+    // 2. Nurses Pool (10 Nurses)
+    for (let i = 1; i <= 10; i++) {
+      const spec = i <= 3 ? 'ICU' : i <= 6 ? 'OT' : 'GENERAL';
+      this.addResource(`NUR-00${i}`, `Nurse #${i}`, 'NURSE', spec);
+    }
+
+    // 3. Hospital Beds (15 Beds)
+    for (let i = 1; i <= 15; i++) {
+      const isIcu = i <= 3;
+      this.addResource(
+        isIcu ? `ICU-00${i}` : `BED-00${i}`,
+        isIcu ? `ICU Bed #${i}` : `Bed #${i}`,
+        isIcu ? 'ICU_BED' : 'BED',
+        isIcu ? 'ICU' : 'GENERAL'
+      );
+    }
+
+    // 4. Critical Equipment & Operating Suites
     this.addResource('OT-001', 'OT Suite 1', 'OT', 'OT');
     this.addResource('OT-002', 'OT Suite 2', 'OT', 'OT');
-    this.addResource('VENT-001', 'Ventilator Unit 1', 'VENTILATOR', 'ICU');
-    this.addResource('VENT-002', 'Ventilator Unit 2', 'VENTILATOR', 'ICU');
 
-    // 5. Equipment
-    this.addResource('EQ-001', 'ECG Machine 1', 'EQUIPMENT', 'ECG');
-    this.addResource('EQ-002', 'X-Ray Machine 1', 'EQUIPMENT', 'XRAY');
-    this.addResource('EQ-003', 'Patient Monitor 1', 'EQUIPMENT', 'MONITOR');
-    this.addResource('EQ-004', 'Ultrasound Machine 1', 'EQUIPMENT', 'ULTRASOUND');
+    for (let i = 1; i <= 4; i++) {
+      this.addResource(`VENT-00${i}`, `Ventilator #${i}`, 'VENTILATOR', 'ICU');
+    }
 
-    // 6. Ambulance
-    this.addResource('AMB-001', 'Emergency Ambulance 1', 'AMBULANCE', 'EMERGENCY');
-    this.addResource('AMB-002', 'Emergency Ambulance 2', 'AMBULANCE', 'EMERGENCY');
+    // 5. Medical Diagnostic Equipment
+    for (let i = 1; i <= 5; i++) {
+      this.addResource(`ECG-00${i}`, `ECG Machine #${i}`, 'EQUIPMENT', 'ECG');
+    }
+    for (let i = 1; i <= 3; i++) {
+      this.addResource(`DEFIB-00${i}`, `Defibrillator #${i}`, 'EQUIPMENT', 'DEFIBRILLATOR');
+    }
+    for (let i = 1; i <= 10; i++) {
+      this.addResource(`OXY-00${i}`, `Oxygen Unit #${i}`, 'EQUIPMENT', 'OXYGEN');
+    }
   }
 
   public clear(): void {
