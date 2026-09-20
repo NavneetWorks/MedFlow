@@ -13,6 +13,7 @@ const DEPARTMENTS = [
 function PatientSetup({ onDeploy }) {
   const [stagedPatients, setStagedPatients] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
   
   // Form State
   const [basicInfo, setBasicInfo] = useState({
@@ -46,13 +47,18 @@ function PatientSetup({ onDeploy }) {
     visibleDeformityOrSwelling: false
   });
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const handleAddPatient = () => {
     if (!basicInfo.name) {
-      alert("Please enter a patient name");
+      showToast("Please enter a patient name", "error");
       return;
     }
     if (!basicInfo.department) {
-      alert("Please select a department");
+      showToast("Please select a department", "error");
       return;
     }
 
@@ -98,11 +104,11 @@ function PatientSetup({ onDeploy }) {
     // Create a one-time listener for the response
     const handleResponse = (response) => {
       if (response.success) {
-        alert(`Successfully deployed ${stagedPatients.length} patients to Backend Buffer!`);
+        showToast(`Successfully deployed ${stagedPatients.length} patients to Backend Buffer!`, 'success');
         setStagedPatients([]); // clear the list
-        if(onDeploy) onDeploy(); // Optional callback to switch to dashboard
+        setTimeout(() => { if(onDeploy) onDeploy(); }, 1500); // Wait a bit before redirecting
       } else {
-        alert("Error deploying patients: " + response.error);
+        showToast("Error deploying patients: " + response.error, 'error');
       }
       socket.off('patients:schedule_response', handleResponse);
     };
@@ -112,6 +118,14 @@ function PatientSetup({ onDeploy }) {
 
   return (
     <div className="setup-page">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <Activity size={16} /> : <AlertTriangle size={16} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
       <div className="setup-intro">
         <h2>Patient Intake Form</h2>
         <p>Configure patient clinical details and arrival timeline before starting the simulation.</p>

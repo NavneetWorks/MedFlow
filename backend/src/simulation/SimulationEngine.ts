@@ -51,7 +51,15 @@ export class SimulationEngine {
     
     // Asynchronously save them to DB immediately with 'REGISTERED' status
     patients.forEach(p => {
-      this.repository.savePatientToDb({...p, status: 'REGISTERED'}).catch(err => {
+      const patientRecord = {
+        ...p,
+        status: 'REGISTERED',
+        criticalLevel: p.criticalLevel ?? 0,
+        priorityScore: p.priorityScore ?? 0,
+        requiredResources: p.requiredResources ?? []
+      };
+      
+      this.repository.savePatientToDb(patientRecord).catch(err => {
         console.warn(`[SimulationEngine] Failed to save scheduled patient ${p.id} to DB:`, err);
       });
     });
