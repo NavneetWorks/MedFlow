@@ -48,8 +48,31 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
     },
   });
 
-  io.on('connection', (socket: Socket) => {
+  async function ensureEngineRunning() {
+    if (!globalEngine) return;
+    try {
+      const queues = globalEngine.queueManager.getAllDepartmentQueuesFull();
+      const totalInQueue = Object.values(queues).reduce((acc, q) => acc + q.length, 0);
+      if (totalInQueue === 0) {
+        const activePatients = await globalEngine.repository.getAllActivePatientsFromDb();
+        const unqueued = activePatients.filter(p => p.status === 'REGISTERED' || p.status === 'WAITING');
+        if (unqueued.length > 0) {
+          await globalEngine.schedulePatients(unqueued);
+        }
+      }
+      if (!globalEngine.clock.getIsRunning()) {
+        globalEngine.startSimulation();
+        io?.emit('sim:state_changed', { isRunning: true });
+      }
+    } catch (err) {
+      console.warn('[SocketGateway] Auto-start engine warning:', err);
+    }
+  }
+
+  io.on('connection', async (socket: Socket) => {
     console.log(`[Socket.IO] Client Connected: ${socket.id}`);
+
+    await ensureEngineRunning();
 
     // Send initial full state on connection
     if (globalEngine) {
@@ -57,6 +80,8 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       socket.emit('queue:updated', globalEngine.queueManager.getAllDepartmentQueuesFull(currentSimTime));
       socket.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
       socket.emit('resources:detailed', globalEngine.resourceManager.getDetailedInventoryState());
+      socket.emit('sim:active_treatments', globalEngine.scheduler.getActiveTreatments());
+      socket.emit('sim:state_changed', { isRunning: globalEngine.clock.getIsRunning() });
     }
 
     // Client subscribes to live simulation stream
@@ -66,12 +91,15 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
     });
 
     // Frontend can explicitly request full state on component mount
-    socket.on('request_initial_state', () => {
+    socket.on('request_initial_state', async () => {
+      await ensureEngineRunning();
       if (globalEngine) {
         const currentSimTime = globalEngine.clock.getTime();
         socket.emit('queue:updated', globalEngine.queueManager.getAllDepartmentQueuesFull(currentSimTime));
         socket.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
         socket.emit('resources:detailed', globalEngine.resourceManager.getDetailedInventoryState());
+        socket.emit('sim:active_treatments', globalEngine.scheduler.getActiveTreatments());
+        socket.emit('sim:state_changed', { isRunning: globalEngine.clock.getIsRunning() });
       }
     });
 

@@ -199,7 +199,7 @@ export default function LiveQueue({ onFullDetails }) {
                               <div className="card-patient-meta">Age: {p.age}y · Pos: #{p.position}</div>
 
                               <div className="card-bottom-row">
-                                <div className="card-score-pill">
+                                <div className="card-score-pill live-score-pulse">
                                   <span>Score</span>
                                   <b>{p.score}</b>
                                 </div>
