@@ -61,6 +61,16 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       console.log(`[Socket.IO] Client ${socket.id} subscribed to simulation: ${simulationId}`);
     });
 
+    // Frontend can explicitly request full state on component mount
+    socket.on('request_initial_state', () => {
+      if (globalEngine) {
+        const currentSimTime = globalEngine.clock.getTime();
+        socket.emit('queue:updated', globalEngine.queueManager.getAllDepartmentQueuesFull(currentSimTime));
+        socket.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
+        socket.emit('resources:detailed', globalEngine.resourceManager.getDetailedInventoryState());
+      }
+    });
+
     // 1. Handle Resource Configuration Update Event from Frontend Setup Page
     socket.on('resources:configure', (configList: any[]) => {
       console.log('[Socket.IO] Received Resource Inventory Config Update:', configList);

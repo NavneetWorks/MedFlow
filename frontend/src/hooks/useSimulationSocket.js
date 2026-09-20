@@ -64,6 +64,9 @@ export function useSimulationSocket() {
       addLog(`Resource ${data.resourceId} is now ${data.newStatus}`);
     });
 
+    // Request full state immediately in case we missed the on-connect emission
+    socket.emit('request_initial_state');
+
     // Cleanup listeners on unmount
     return () => {
       socket.off('queue:updated');
