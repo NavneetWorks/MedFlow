@@ -121,6 +121,22 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       }
       globalEngine.schedulePatients(patientsArray);
       socket.emit('patients:schedule_response', { success: true });
+      
+      // Auto-broadcast updated history to everyone
+      globalEngine.repository.getAllActivePatientsFromDb().then(history => {
+        io?.emit('patients:history_response', history);
+      }).catch(err => console.error(err));
+    });
+
+    // 3.5 Handle explicit history fetch requests
+    socket.on('patients:history_request', async () => {
+      if (!globalEngine) return;
+      try {
+        const history = await globalEngine.repository.getAllActivePatientsFromDb();
+        socket.emit('patients:history_response', history);
+      } catch (err) {
+        console.error('[Socket.IO] Error fetching history:', err);
+      }
     });
 
     // 4. Handle simulation start/pause/speed controls via WebSocket

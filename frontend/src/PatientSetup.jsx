@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, Activity, Clock3, Send, Plus, ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
@@ -12,8 +12,25 @@ const DEPARTMENTS = [
 
 function PatientSetup({ onDeploy }) {
   const [stagedPatients, setStagedPatients] = useState([]);
+  const [historyPatients, setHistoryPatients] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+
+  useEffect(() => {
+    // Listen for history response
+    const handleHistory = (data) => {
+      setHistoryPatients(data);
+    };
+    
+    socket.on('patients:history_response', handleHistory);
+    // Request initial history
+    socket.emit('patients:history_request');
+
+    return () => {
+      socket.off('patients:history_response', handleHistory);
+    };
+  }, []);
   
   // Form State
   const [basicInfo, setBasicInfo] = useState({
@@ -331,6 +348,71 @@ function PatientSetup({ onDeploy }) {
             <Send size={16} /> Deploy {stagedPatients.length} Patients to Backend
           </button>
         </div>
+      </div>
+
+      {/* Full Width History Section */}
+      <div className="setup-history-section">
+        <h3><Activity size={16} className="inline-icon" /> Active Intake History</h3>
+        <p className="history-subtitle">Showing all patients successfully deployed to the engine or actively waiting.</p>
+
+        {historyPatients.length === 0 ? (
+          <div className="empty-state">No submitted patients found.</div>
+        ) : (
+          <div className="history-grid">
+            {historyPatients.map(p => {
+              const isExpanded = expandedHistoryId === p.id;
+              
+              // Safely parse JSONB symptoms and vitals
+              const vitals = typeof p.vitals === 'string' ? JSON.parse(p.vitals) : (p.vitals || {});
+              const symptomsJson = typeof p.symptoms === 'string' ? JSON.parse(p.symptoms) : (p.symptoms || {});
+              
+              const cardio = symptomsJson.cardiology;
+              const neuro = symptomsJson.neurology;
+              const trauma = symptomsJson.trauma;
+              
+              return (
+                <div key={p.id} className="history-item">
+                  <div className="history-header" onClick={() => setExpandedHistoryId(isExpanded ? null : p.id)}>
+                    <div className="h-col name">
+                      <b>{p.name}</b>
+                      <span>Age {p.age}</span>
+                    </div>
+                    <div className="h-col dept">
+                      <b>{p.department}</b>
+                      <span>Arr: t={p.arrival_time}</span>
+                    </div>
+                    <div className="h-col status">
+                      <span className={`status-badge ${p.status.toLowerCase()}`}>{p.status}</span>
+                    </div>
+                    <div className="h-col action">
+                      {isExpanded ? <ChevronUp size={16} color="#525252" /> : <ChevronDown size={16} color="#525252" />}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="staged-details history-details">
+                      <div className="detail-group">
+                        <h4>Vitals</h4>
+                        <p>SpO2: <i>{vitals.spo2}%</i></p>
+                        <p>Pulse: <i>{vitals.pulseRate} bpm</i></p>
+                        <p>BP: <i>{vitals.systolicBP} mmHg</i></p>
+                        <p>Resp: <i>{vitals.respirationRate} /min</i></p>
+                        <p>Status: <i>{vitals.consciousness}</i></p>
+                      </div>
+                      <div className="detail-group">
+                        <h4>Symptoms</h4>
+                        {cardio && Object.entries(cardio).map(([k,v]) => <p key={k}>{k}: <i>{v?.toString()}</i></p>)}
+                        {neuro && Object.entries(neuro).map(([k,v]) => <p key={k}>{k}: <i>{v?.toString()}</i></p>)}
+                        {trauma && Object.entries(trauma).map(([k,v]) => <p key={k}>{k}: <i>{v?.toString()}</i></p>)}
+                        {!cardio && !neuro && !trauma && <p><i>Standard intake (No specific symptoms)</i></p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
