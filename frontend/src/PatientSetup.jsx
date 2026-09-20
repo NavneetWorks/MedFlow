@@ -123,7 +123,7 @@ function PatientSetup({ onDeploy }) {
       if (response.success) {
         showToast(`Successfully deployed ${stagedPatients.length} patients to Backend Buffer!`, 'success');
         setStagedPatients([]); // clear the list
-        setTimeout(() => { if(onDeploy) onDeploy(); }, 1500); // Wait a bit before redirecting
+        // Explicitly NOT calling onDeploy() so the user stays on this page and sees real-time updates
       } else {
         showToast("Error deploying patients: " + response.error, 'error');
       }
@@ -370,11 +370,13 @@ function PatientSetup({ onDeploy }) {
               const neuro = symptomsJson.neurology;
               const trauma = symptomsJson.trauma;
               
+              const shortId = "P-" + (p.id.includes('-') ? p.id.split('-').pop() : p.id.substring(0, 4));
+
               return (
                 <div key={p.id} className="history-item">
                   <div className="history-header" onClick={() => setExpandedHistoryId(isExpanded ? null : p.id)}>
                     <div className="h-col name">
-                      <b>{p.name}</b>
+                      <b>{p.name} <span style={{fontSize: '11px', color: 'var(--text-light)', fontWeight: 'normal', marginLeft: '6px'}}>{shortId}</span></b>
                       <span>Age {p.age}</span>
                     </div>
                     <div className="h-col dept">
