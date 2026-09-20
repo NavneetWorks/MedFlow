@@ -115,16 +115,26 @@ export default function HospitalOperations({ failure }) {
     }));
   }, [resourceDetailed]);
 
+  const doctorTooltip = availableSpecs
+    .filter(s => s.type === 'DOCTOR' && s.count > 0)
+    .map(s => `${s.specialization || 'General'}: ${s.count}`)
+    .join('\n') || 'No doctors configured';
+
+  const roomTooltip = availableSpecs
+    .filter(s => (s.type === 'BED' || s.type === 'ICU_BED' || s.type === 'OT') && s.count > 0)
+    .map(s => `${s.type.replace('_', ' ')} (${s.specialization || 'General'}): ${s.count}`)
+    .join('\n') || 'No rooms configured';
+
   return <div className="operations-page">
     <section className="operations-intro"><div><p className="eyebrow">CAPACITY & ALLOCATION</p><h2>Hospital resource operations</h2><p>Live view of capacity, staff allocation, department load, and active operational constraints.</p></div><span className="ops-live"><i className="live-dot"/>LIVE OPERATIONS</span></section>
     
     <section className="ops-kpis">
-      <OpsKpi value={totalDoctors} label="Total doctors" />
-      <OpsKpi value={availableDoctors} label="Available doctors" tone="green" />
-      <OpsKpi value={totalDoctors - availableDoctors} label="Consulting doctors" />
-      <OpsKpi value={totalBeds} label="Total rooms" />
-      <OpsKpi value={availableBeds} label="Available rooms" tone="green" />
-      <OpsKpi value={occupiedBeds} label="Occupied rooms" tone="warning" />
+      <OpsKpi value={totalDoctors} label="Total doctors" title={doctorTooltip} />
+      <OpsKpi value={availableDoctors} label="Available doctors" tone="green" title={doctorTooltip} />
+      <OpsKpi value={totalDoctors - availableDoctors} label="Consulting doctors" title={doctorTooltip} />
+      <OpsKpi value={totalBeds} label="Total rooms" title={roomTooltip} />
+      <OpsKpi value={availableBeds} label="Available rooms" tone="green" title={roomTooltip} />
+      <OpsKpi value={occupiedBeds} label="Occupied rooms" tone="warning" title={roomTooltip} />
     </section>
 
     <section className="operations-alerts">
@@ -216,6 +226,6 @@ export default function HospitalOperations({ failure }) {
   </div>;
 }
 
-function OpsKpi({ value, label, tone = '' }) { return <div className={`ops-kpi ${tone}`}><b>{value}</b><span>{label}</span></div>; }
+function OpsKpi({ value, label, tone = '', title = '' }) { return <div className={`ops-kpi ${tone}`} title={title}><b>{value}</b><span>{label}</span></div>; }
 function OpsAlert({ critical, text }) { return <div className={`ops-alert ${critical ? 'critical' : ''}`}><AlertTriangle size={18}/><span>{text}</span><button>View <ArrowRight size={14}/></button></div>; }
 function Load({ value }) { return <span className={`load ${value.toLowerCase()}`}>{value}</span>; }
