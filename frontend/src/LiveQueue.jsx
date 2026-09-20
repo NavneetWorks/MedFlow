@@ -5,13 +5,22 @@ import './queue.css';
 
 function PriorityBadge({ priority }) { return <span className={`priority ${priority.toLowerCase()}`}>{priority}</span>; }
 
+const DEPARTMENTS = [
+  { key: 'EMERGENCY_ER', label: 'Emergency ER', color: '#da1e28' },
+  { key: 'CARDIOLOGY', label: 'Cardiology', color: '#0f62fe' },
+  { key: 'NEUROLOGY', label: 'Neurology', color: '#8a3ff8' },
+  { key: 'ORTHOPEDICS', label: 'Orthopedics / Trauma', color: '#007d79' },
+  { key: 'GENERAL_SURGERY', label: 'General Surgery', color: '#ee5396' },
+  { key: 'PULMONOLOGY', label: 'Pulmonology', color: '#005d5d' },
+  { key: 'PEDIATRICS', label: 'Pediatrics', color: '#1192e8' }
+];
+
 export default function LiveQueue({ onFullDetails }) {
   const { queue, simState } = useSimulationSocket();
   
   const [search, setSearch] = useState('');
-  const [department, setDepartment] = useState('All departments');
   const [priority, setPriority] = useState('All priorities');
-  const [resource, setResource] = useState('All resources');
+  const [viewMode, setViewMode] = useState('tracks'); // 'tracks' | 'table'
   const [selected, setSelected] = useState(null);
 
   // Flatten and process queue data from the backend
@@ -21,31 +30,41 @@ export default function LiveQueue({ onFullDetails }) {
       Object.keys(queue).forEach(dept => {
         const list = Array.isArray(queue[dept]) ? queue[dept] : [];
         list.forEach(p => {
-          // Format wait time
-          const waitMins = p.waitTime || 0;
-          const waitStr = waitMins > 60 ? `${Math.floor(waitMins/60)}h ${Math.floor(waitMins%60)}m` : `${Math.floor(waitMins)} min`;
+          const scoreVal = typeof p.priorityScore === 'number' ? p.priorityScore : (p.dynamicPriorityScore || 0);
+          const waitMins = typeof p.waitingMinutes === 'number' ? p.waitingMinutes : (p.waitTime || 0);
+          const crit = typeof p.criticalLevel === 'number' ? p.criticalLevel : (p.acuityScore || 0);
           
+          const waitStr = waitMins > 60 
+            ? `${Math.floor(waitMins/60)}h ${Math.floor(waitMins%60)}m` 
+            : `${Math.floor(waitMins)} min`;
+          
+          let prioLabel = 'Stable';
+          if (crit >= 75 || scoreVal >= 70) prioLabel = 'Urgent';
+          else if (crit >= 50 || scoreVal >= 50) prioLabel = 'High';
+          else if (crit >= 25 || scoreVal >= 25) prioLabel = 'Moderate';
+
           patients.push({
             id: p.id || '—',
             name: p.name || 'Unknown',
-            age: p.age || Math.floor(Math.random() * 60) + 20, // Backend might not send age, mock if missing
+            age: p.age ?? '—',
             department: p.department || dept,
-            priority: p.triageLevel || 'Stable', // Map backend triage to priority
-            arrival: p.arrivalTime ? new Date(p.arrivalTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now',
+            priority: prioLabel,
+            arrival: typeof p.arrivalTime === 'number' ? `Min ${p.arrivalTime}` : (p.arrivalTime || 'Just now'),
             wait: waitStr,
-            doctor: '—', // Since they are waiting, they don't have a doctor yet
-            resource: p.assignedResourceId ? 'Allocated' : 'Waiting',
-            status: 'Waiting',
-            score: p.dynamicPriorityScore ? p.dynamicPriorityScore.toFixed(1) : 0,
-            originalScore: p.dynamicPriorityScore || 0,
-            acuityBase: p.acuityScore || 0
+            waitTime: waitMins,
+            doctor: '—',
+            resource: Array.isArray(p.requiredResources) && p.requiredResources.length > 0 
+              ? p.requiredResources.map(r => typeof r === 'string' ? r : r.resourceType).join(', ')
+              : 'Waiting',
+            status: p.status || 'WAITING',
+            score: scoreVal.toFixed(1),
+            originalScore: scoreVal,
+            acuityBase: crit
           });
         });
       });
     }
-    // Sort globally by dynamic priority score
     patients.sort((a, b) => b.originalScore - a.originalScore);
-    // Assign global queue positions
     patients.forEach((p, i) => p.position = i + 1);
     return patients;
   }, [queue]);
@@ -53,10 +72,8 @@ export default function LiveQueue({ onFullDetails }) {
   const filtered = useMemo(() => allPatients.filter(p => {
     const term = search.toLowerCase();
     return (!term || p.name.toLowerCase().includes(term) || p.id.toLowerCase().includes(term)) &&
-      (department === 'All departments' || p.department.toLowerCase() === department.toLowerCase()) &&
-      (priority === 'All priorities' || p.priority.toLowerCase() === priority.toLowerCase()) &&
-      (resource === 'All resources' || p.resource.toLowerCase() === resource.toLowerCase());
-  }), [search, department, priority, resource, allPatients]);
+      (priority === 'All priorities' || p.priority.toLowerCase() === priority.toLowerCase());
+  }), [search, priority, allPatients]);
   
   const current = selected && allPatients.find(p => p.id === selected.id);
 
@@ -73,8 +90,16 @@ export default function LiveQueue({ onFullDetails }) {
 
   return <div className="queue-page">
     <section className="queue-intro">
-      <div><p className="eyebrow">SCHEDULING ENGINE</p><h2>Patients awaiting allocation</h2><p className="queue-copy">Live ordering updates as the active strategy evaluates urgency, waiting time, and resource availability.</p></div>
-      <div className="queue-live"><span className="live-dot"/>QUEUE LIVE <span>Simulation Time: {Math.floor(simState?.simTimeMinutes || 0)} min</span></div>
+      <div>
+        <p className="eyebrow">LIVE SCHEDULING ENGINE</p>
+        <h2>Real-Time Department Queues</h2>
+        <p className="queue-copy">
+          Live priority queue tracks for all 7 hospital departments updating on every tick. Patient positions adjust automatically based on priority scores.
+        </p>
+      </div>
+      <div className="queue-live">
+        <span className="live-dot"/>QUEUE LIVE <span>Simulation Time: {Math.floor(simState?.simTimeMinutes || 0)} min</span>
+      </div>
     </section>
 
     <section className="queue-kpis">
@@ -86,45 +111,160 @@ export default function LiveQueue({ onFullDetails }) {
       <QueueKpi value={`${avgWait} min`} label="Average wait" />
     </section>
 
-    {/* Capacity constraint banner could be dynamic based on resources:status, mocking if none */}
     {urgentCount > 3 && (
       <section className="capacity-banner">
         <AlertTriangle size={19}/>
-        <div><b>High Acuity Load</b><span>There are {urgentCount} urgent patients waiting for resources.</span></div>
-        <button>Review resources</button>
+        <div><b>High Acuity Load</b><span>There are {urgentCount} urgent patients waiting for resources across departments.</span></div>
       </section>
     )}
 
     <section className="queue-workspace panel">
-      <div className="filter-heading"><div><p className="eyebrow">ACTIVE WORKLIST</p><h2>Priority queue <span className="small-count">{filtered.length}</span></h2></div><button className="filter-button"><SlidersHorizontal size={16}/>Filters</button></div>
+      <div className="filter-heading">
+        <div>
+          <p className="eyebrow">ACTIVE WORKLIST</p>
+          <h2>All Department Queues <span className="small-count">{totalWaiting} Patients</span></h2>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="view-toggle-btns">
+            <button className={`view-toggle-btn ${viewMode === 'tracks' ? 'active' : ''}`} onClick={() => setViewMode('tracks')}>
+              Tracks View
+            </button>
+            <button className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
+              Table View
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="filters">
-        <label className="search"><Search size={17}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search patient or ID" /></label>
-        <Filter label="Department" value={department} setValue={setDepartment} options={['All departments', 'Emergency', 'Cardiology', 'Orthopedics', 'General']} />
+        <label className="search">
+          <Search size={17}/>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search patient name or ID (e.g. P1, P2)" />
+        </label>
         <Filter label="Priority" value={priority} setValue={setPriority} options={['All priorities', 'Urgent', 'High', 'Moderate', 'Stable']} />
       </div>
-      <div className="queue-table-wrap">
-        <table className="full-queue-table">
-          <thead><tr><th>POS.</th><th>PATIENT</th><th>AGE</th><th>DEPARTMENT</th><th>PRIORITY</th><th>PRIORITY SCORE <Info size={12}/></th><th>ARRIVAL</th><th>WAIT</th><th>STATUS</th></tr></thead>
-          <tbody>
-            {filtered.length === 0 && <tr><td colSpan="9" style={{textAlign: 'center', padding: '32px'}}>No patients waiting in queue.</td></tr>}
-            {filtered.map(p => (
-              <tr onClick={() => setSelected(p)} className={current?.id === p.id ? 'selected-row' : ''} key={p.id}>
-                <td><strong>#{p.position}</strong></td>
-                <td><strong>{p.name}</strong><small>{p.id}</small></td>
-                <td>{p.age}</td>
-                <td>{p.department}</td>
-                <td><PriorityBadge priority={p.priority}/></td>
-                <td><span className="score">{p.score}</span></td>
-                <td>{p.arrival}</td>
-                <td>{p.wait}</td>
-                <td><span className={'status'}>{p.status}</span></td>
+
+      {viewMode === 'tracks' ? (
+        <div className="dept-lanes-container">
+          {DEPARTMENTS.map(dept => {
+            const deptPatients = filtered.filter(p => p.department === dept.key);
+            const deptAvgWait = deptPatients.length > 0 
+              ? Math.floor(deptPatients.reduce((a, b) => a + b.waitTime, 0) / deptPatients.length)
+              : 0;
+            const topScore = deptPatients.length > 0 ? deptPatients[0].score : '—';
+
+            return (
+              <div className="dept-lane-card" key={dept.key} style={{ borderLeftColor: dept.color }}>
+                <div className="dept-lane-header">
+                  <div className="dept-title-wrap">
+                    <h3>{dept.label}</h3>
+                    <span className="dept-badge">{deptPatients.length} Waiting</span>
+                  </div>
+                  <div className="dept-stats-summary">
+                    <span>Avg Wait: <b>{deptAvgWait} min</b></span>
+                    <span>Top Score: <b>{topScore}</b></span>
+                  </div>
+                </div>
+
+                <div className="horizontal-track-wrapper">
+                  <div className="horizontal-track">
+                    {(() => {
+                      const totalSlots = Math.max(6, deptPatients.length + 2);
+                      const slots = [];
+                      for (let i = 0; i < totalSlots; i++) {
+                        const p = deptPatients[i];
+                        if (p) {
+                          slots.push(
+                            <div 
+                              key={p.id} 
+                              className={`patient-card-box ${current?.id === p.id ? 'selected-card' : ''}`}
+                              onClick={() => setSelected(p)}
+                            >
+                              <div className="slot-index-tag">Slot [{i}]</div>
+                              <div className="card-top-row">
+                                <span className="patient-id-badge">{p.id}</span>
+                                <PriorityBadge priority={p.priority} />
+                              </div>
+                              
+                              <div className="card-patient-name">{p.name}</div>
+                              <div className="card-patient-meta">Age: {p.age}y · Pos: #{p.position}</div>
+
+                              <div className="card-bottom-row">
+                                <div className="card-score-pill">
+                                  <span>Score</span>
+                                  <b>{p.score}</b>
+                                </div>
+                                <div className="card-wait-time">
+                                  <Clock3 size={12}/> {p.wait}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          slots.push(
+                            <div key={`empty-slot-${dept.key}-${i}`} className="empty-slot-box">
+                              <div className="slot-index-tag">Slot [{i}]</div>
+                              <div className="empty-slot-label">Empty Slot</div>
+                              <div className="empty-slot-status">Awaiting Patient</div>
+                            </div>
+                          );
+                        }
+                      }
+                      return slots;
+                    })()}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="queue-table-wrap" style={{ marginTop: '16px' }}>
+          <table className="full-queue-table">
+            <thead>
+              <tr>
+                <th>POS.</th>
+                <th>PATIENT</th>
+                <th>AGE</th>
+                <th>DEPARTMENT</th>
+                <th>PRIORITY</th>
+                <th>PRIORITY SCORE <Info size={12}/></th>
+                <th>ARRIVAL</th>
+                <th>WAIT</th>
+                <th>STATUS</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '32px' }}>
+                    No patients waiting in queue.
+                  </td>
+                </tr>
+              )}
+              {filtered.map(p => (
+                <tr onClick={() => setSelected(p)} className={current?.id === p.id ? 'selected-row' : ''} key={p.id}>
+                  <td><strong>#{p.position}</strong></td>
+                  <td><strong>{p.name}</strong><small style={{ display: 'block', color: '#6f6f6f' }}>{p.id}</small></td>
+                  <td>{p.age}</td>
+                  <td>{p.department}</td>
+                  <td><PriorityBadge priority={p.priority}/></td>
+                  <td><span className="score">{p.score}</span></td>
+                  <td>{p.arrival}</td>
+                  <td>{p.wait}</td>
+                  <td><span className={'status'}>{p.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="table-footer">
+        Showing {filtered.length} of {totalWaiting} waiting patients across 7 department queues
       </div>
-      <div className="table-footer">Showing {filtered.length} of {totalWaiting} waiting patients</div>
     </section>
+
     {current && <PatientDrawer patient={current} close={() => setSelected(null)} onFullDetails={onFullDetails} />}
   </div>;
 }

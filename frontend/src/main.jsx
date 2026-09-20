@@ -11,6 +11,7 @@ import PatientDetails from './PatientDetails';
 import HospitalOperations from './HospitalOperations';
 import Analytics from './Analytics';
 import PatientSetup from './PatientSetup';
+import SimulationVisualizer from './SimulationVisualizer';
 import { useSimulationSocket } from './hooks/useSimulationSocket';
 
 const patients = [
@@ -58,7 +59,46 @@ function App() {
   const [showControls, setShowControls] = useState(true);
   const [page, setPage] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Process live socket queue data
+  const flattenedLiveQueue = useMemo(() => {
+    let list = [];
+    if (liveQueue) {
+      Object.keys(liveQueue).forEach(dept => {
+        const queueList = Array.isArray(liveQueue[dept]) ? liveQueue[dept] : [];
+        queueList.forEach(p => {
+          const scoreVal = typeof p.priorityScore === 'number' ? p.priorityScore : (p.dynamicPriorityScore || 0);
+          const waitMins = typeof p.waitingMinutes === 'number' ? p.waitingMinutes : (p.waitTime || 0);
+          const crit = typeof p.criticalLevel === 'number' ? p.criticalLevel : (p.acuityScore || 0);
+          
+          let prioLabel = 'Stable';
+          if (crit >= 75 || scoreVal >= 70) prioLabel = 'Urgent';
+          else if (crit >= 50 || scoreVal >= 50) prioLabel = 'High';
+          else if (crit >= 25 || scoreVal >= 25) prioLabel = 'Moderate';
+
+          list.push({
+            id: p.id || '—',
+            name: p.name || 'Unknown',
+            department: p.department || dept,
+            priority: prioLabel,
+            wait: waitMins > 60 ? `${Math.floor(waitMins/60)}h ${Math.floor(waitMins%60)}m` : `${Math.floor(waitMins)} min`,
+            resource: Array.isArray(p.requiredResources) && p.requiredResources.length > 0 
+              ? p.requiredResources.map(r => typeof r === 'string' ? r : r.resourceType).join(', ')
+              : 'Waiting',
+            status: p.status || 'WAITING',
+            score: scoreVal
+          });
+        });
+      });
+    }
+    list.sort((a, b) => b.score - a.score);
+    return list.map((item, idx) => ({ ...item, position: idx + 1 }));
+  }, [liveQueue]);
+
+  const liveQueueCount = flattenedLiveQueue.length;
+
   const queue = useMemo(() => {
+    if (flattenedLiveQueue.length > 0) return flattenedLiveQueue;
     const urgency = { Urgent: 4, High: 3, Moderate: 2, Stable: 1 };
     const sorted = [...patients].sort((a, b) => {
       if (strategy === 'FCFS') return a.position - b.position;
@@ -67,7 +107,7 @@ function App() {
       return b.score - a.score;
     });
     return sorted.map((patient, index) => ({ ...patient, position: index + 1 }));
-  }, [strategy]);
+  }, [flattenedLiveQueue, strategy]);
   const activeFailure = failure !== 'No active failure';
 
   return <main>
@@ -75,7 +115,8 @@ function App() {
       <div className="brand-mark"><span className="mark">+</span><span>MEDFLOW</span></div>
       <nav>
         <a className={page === 'dashboard' ? 'nav-active' : ''} onClick={() => setPage('dashboard')}><Gauge size={18}/>Dashboard</a>
-        <a className={page === 'queue' ? 'nav-active' : ''} onClick={() => setPage('queue')}><Activity size={18}/>Live Queue <span className="nav-count">24</span></a>
+        <a className={page === 'visualizer' ? 'nav-active' : ''} onClick={() => setPage('visualizer')}><Play size={18}/>Simulation Visualizer</a>
+        <a className={page === 'queue' ? 'nav-active' : ''} onClick={() => setPage('queue')}><Activity size={18}/>Live Queue <span className="nav-count">{liveQueueCount}</span></a>
         <a><Users size={18}/>Patients</a>
         <a className={page === 'operations' ? 'nav-active' : ''} onClick={() => setPage('operations')}><BedDouble size={18}/>Hospital Operations</a>
         <a className={page === 'analytics' ? 'nav-active' : ''} onClick={() => setPage('analytics')}><MonitorCog size={18}/>Analytics</a>
@@ -89,7 +130,7 @@ function App() {
 
     <section className="shell">
       <header>
-        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : page === 'setup' ? 'Patient Intake Form' : 'Patient Details'}</h1></div>
+        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'visualizer' ? 'Simulation Visualizer' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : page === 'setup' ? 'Patient Intake Form' : 'Patient Details'}</h1></div>
         <div className="header-actions"><span className="updated"><span className="live-dot"/> Live · Updated just now</span><button className="icon-button"><Menu size={19}/></button><div className="avatar">NK</div></div>
       </header>
 
@@ -128,7 +169,7 @@ function App() {
       </section>
 
       <section className="panel resource-panel"><div className="section-heading"><div><p className="eyebrow">RESOURCE CAPACITY</p><h2>Hospital utilization</h2></div><button className="link-button">View all resources <ArrowRight size={16}/></button></div><div className="resource-grid">{resources.map(r => { const Icon = r.icon; return <div className="resource" key={r.label}><div className="resource-title"><span className="resource-icon"><Icon size={19}/></span><span>{r.label}</span><b>{Math.round(r.used/r.total*100)}%</b></div><Utilization used={r.used} total={r.total}/></div>})}</div></section>
-      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : page === 'setup' ? <PatientSetup historyPatients={historyPatients} onDeploy={() => {}} /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
+      </> : page === 'visualizer' ? <SimulationVisualizer /> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : page === 'setup' ? <PatientSetup historyPatients={historyPatients} onDeploy={() => {}} /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
     </section>
   </main>;
 }

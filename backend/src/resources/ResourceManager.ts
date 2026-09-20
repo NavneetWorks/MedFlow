@@ -4,6 +4,7 @@ export interface ResourceConfigItem {
   type: ResourceType;
   specialization?: Specialization | string;
   count: number;
+  name?: string;
 }
 
 /**
@@ -99,7 +100,9 @@ export class ResourceManager {
         const diff = item.count - currentCount;
         for (let i = 1; i <= diff; i++) {
           const newId = `${item.type}-${item.specialization ?? 'GEN'}-${currentCount + i}`;
-          const newName = `${item.type} ${item.specialization ? item.specialization : ''} #${currentCount + i}`;
+          const newName = item.name 
+            ? (diff === 1 ? item.name : `${item.name} #${i}`)
+            : `${item.type} ${item.specialization ? item.specialization : ''} #${currentCount + i}`;
           this.addResource(newId, newName, item.type, item.specialization);
         }
       } else if (item.count < currentCount) {

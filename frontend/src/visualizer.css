@@ -1,0 +1,582 @@
+/* Ultra-Compact Single Screen Viewport Visualizer Styling - Hospital Medical Theme */
+.visualizer-page-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 1. STANDALONE TOP HEADER BAR */
+.visualizer-top-header {
+  padding: 4px 12px;
+  height: 32px;
+  min-height: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.header-title-clean h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.visualizer-controls-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sim-time-badge-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 2px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #334155;
+}
+
+.sim-time-badge-compact b {
+  font-family: 'IBM Plex Mono', monospace;
+  color: #0284c7;
+}
+
+.status-pill {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+.status-pill.running {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill.paused {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.button-group-compact {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-start-compact {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-start-compact:hover {
+  background: #0369a1;
+}
+
+.btn-pause-compact {
+  background: #f59e0b;
+  color: #ffffff;
+  border: none;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.btn-reset-compact {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.btn-reset-compact:hover {
+  background: #fef2f2;
+}
+
+/* 2. SEPARATE UNIFORM HOSPITAL RESOURCE INVENTORY PANEL */
+.hospital-resource-panel {
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.resource-row-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  width: 90px;
+  min-width: 90px;
+}
+
+.clean-badge-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  align-items: center;
+  flex: 1;
+}
+
+.clean-resource-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.clean-resource-badge.highlight {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+}
+
+.badge-name {
+  font-weight: 500;
+  color: #475569;
+}
+
+.badge-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+/* 3. COMPACT PATIENT INTAKE STRIP */
+.intake-strip-compact {
+  padding: 3px 10px;
+  height: 32px;
+  min-height: 32px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-left: 4px solid #0284c7;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.intake-label-compact {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #0284c7;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.intake-label-compact b {
+  color: #0f172a;
+}
+
+.intake-chips-compact {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  align-items: center;
+  flex: 1;
+}
+
+.intake-box {
+  background: #f0f9ff;
+  border: 1px solid #7dd3fc;
+}
+
+.empty-strip-txt {
+  font-size: 10px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* 4. ULTRA-COMPACT 7 DEPARTMENT QUEUES */
+.queues-section-compact {
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.compact-queues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.compact-dept-row-micro {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0284c7;
+  border-radius: 4px;
+  padding: 2px 8px;
+  gap: 10px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  box-sizing: border-box;
+}
+
+.micro-dept-label {
+  flex: 0 0 140px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.micro-dept-label strong {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.micro-queue-badge {
+  font-size: 8.5px;
+  color: #64748b;
+  line-height: 1;
+}
+
+.micro-track-slots {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  align-items: center;
+  flex: 1;
+  padding: 1px 0;
+}
+
+.micro-slot-box {
+  flex: 0 0 44px;
+  min-width: 44px;
+  height: 25px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1px 2px;
+  box-sizing: border-box;
+}
+
+.micro-slot-box.occupied {
+  background: #f0f9ff;
+  border: 1px solid #0284c7;
+  color: #0f172a;
+}
+
+.micro-slot-box.empty {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #94a3b8;
+}
+
+.micro-idx {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 6.5px;
+  color: #64748b;
+  line-height: 1;
+}
+
+.micro-id {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 8.5px;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.micro-score {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 8px;
+  color: #0284c7;
+  line-height: 1;
+}
+
+.micro-dash {
+  font-size: 8px;
+  color: #cbd5e1;
+  align-self: center;
+  margin-top: 2px;
+}
+
+/* 5. NEW: 7 VERTICAL ACTIVE TREATMENT COLUMNS */
+.treatment-columns-section {
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.section-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #0284c7;
+}
+
+.section-header-compact b {
+  color: #0f172a;
+}
+
+.treatment-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.treatment-column-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #0284c7;
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 70px;
+}
+
+.column-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.column-name {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.column-count-badge {
+  font-size: 8px;
+  font-weight: 600;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.column-treatments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empty-column-txt {
+  font-size: 8.5px;
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.active-patient-card {
+  background: #ffffff;
+  border: 1px solid #0284c7;
+  border-radius: 3px;
+  padding: 3px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-top-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-top-info .p-id {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #0f172a;
+}
+
+.card-top-info .p-name {
+  font-size: 8.5px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
+}
+
+.card-resource-tags {
+  display: flex;
+  gap: 4px;
+  font-size: 7.5px;
+}
+
+.tag-doc, .tag-bed {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0 3px;
+  border-radius: 2px;
+  color: #334155;
+}
+
+.card-timer-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.timer-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7.5px;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.progress-bg {
+  width: 100%;
+  height: 3px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #0284c7;
+  transition: width 0.3s ease;
+}
+
+/* 6. NEW: COMPLETED PATIENTS TRACK */
+.completed-track-section {
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-left: 4px solid #166534;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.completed-label-compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #166534;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.completed-chips-list {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  align-items: center;
+  flex: 1;
+}
+
+.completed-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.comp-id {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.comp-name {
+  color: #166534;
+  font-weight: 500;
+}
+
+.comp-dept {
+  font-size: 7.5px;
+  color: #475569;
+  background: #dcfce7;
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.empty-completed-txt {
+  font-size: 9.5px;
+  color: #94a3b8;
+  font-style: italic;
+}

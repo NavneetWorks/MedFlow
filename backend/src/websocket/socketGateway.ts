@@ -144,9 +144,20 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
     });
 
     // 4. Handle simulation start/pause/speed controls via WebSocket
-    socket.on('sim:start', () => {
+    socket.on('sim:start', async () => {
       console.log('[Socket.IO] Command: START SIMULATION');
-      globalEngine?.startSimulation();
+      if (globalEngine) {
+        try {
+          const activePatients = await globalEngine.repository.getAllActivePatientsFromDb();
+          const unqueued = activePatients.filter(p => p.status === 'REGISTERED' || p.status === 'WAITING');
+          if (unqueued.length > 0) {
+            await globalEngine.schedulePatients(unqueued);
+          }
+        } catch (err) {
+          console.warn('[Socket.IO] Warning loading DB patients on start:', err);
+        }
+        globalEngine.startSimulation();
+      }
       io?.emit('sim:state_changed', { isRunning: true });
     });
 
@@ -154,6 +165,20 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       console.log('[Socket.IO] Command: PAUSE SIMULATION');
       globalEngine?.pauseSimulation();
       io?.emit('sim:state_changed', { isRunning: false });
+    });
+
+    socket.on('sim:reset', () => {
+      console.log('[Socket.IO] Command: RESET SIMULATION');
+      if (globalEngine) {
+        globalEngine.resetSimulation();
+      }
+      io?.emit('sim:state_changed', { isRunning: false });
+      io?.emit('sim:tick', { simTimeMinutes: 0, waitingCount: 0, allocatedCount: 0 });
+      if (globalEngine) {
+        io?.emit('queue:updated', globalEngine.queueManager.getAllDepartmentQueuesFull(0));
+        io?.emit('resources:status', globalEngine.resourceManager.getAvailableCounts());
+        io?.emit('resources:detailed', globalEngine.resourceManager.getDetailedInventoryState());
+      }
     });
 
     socket.on('sim:speed', (ratio: number) => {

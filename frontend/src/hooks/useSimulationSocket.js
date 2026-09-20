@@ -100,18 +100,17 @@ export function useSimulationSocket() {
   // Control Simulation
   const startSimulation = () => socket.emit('sim:start');
   const pauseSimulation = () => socket.emit('sim:pause');
+  const resetSimulation = () => socket.emit('sim:reset');
   const setSimulationSpeed = (ratio) => socket.emit('sim:speed', ratio);
   const subscribeToSim = (simId) => socket.emit('sim:subscribe', simId);
 
   // Patient Management
   const addPatient = (patientData) => {
-    // TODO: Implementation for injecting patient details goes here
     socket.emit('patient:add', patientData);
   };
 
   // Resource Management
   const configureResources = (configList) => {
-    // TODO: Implementation for updating max beds/doctors goes here
     socket.emit('resources:configure', configList);
   };
 
@@ -127,6 +126,7 @@ export function useSimulationSocket() {
     // Expose Actions
     startSimulation,
     pauseSimulation,
+    resetSimulation,
     setSimulationSpeed,
     subscribeToSim,
     addPatient,
