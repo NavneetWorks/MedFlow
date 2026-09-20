@@ -14,15 +14,31 @@ export default function HospitalOperations({ failure }) {
 
   // Compute unique specializations/types from detailed backend state
   const availableSpecs = useMemo(() => {
-    if (!resourceDetailed || !Array.isArray(resourceDetailed)) return [];
+    const baseOptions = [
+      { type: 'DOCTOR', specialization: 'EMERGENCY', count: 0 },
+      { type: 'DOCTOR', specialization: 'CARDIOLOGY', count: 0 },
+      { type: 'DOCTOR', specialization: 'ORTHOPEDICS', count: 0 },
+      { type: 'DOCTOR', specialization: 'GENERAL', count: 0 },
+      { type: 'NURSE', specialization: 'ICU', count: 0 },
+      { type: 'NURSE', specialization: 'GENERAL', count: 0 },
+      { type: 'BED', specialization: 'GENERAL', count: 0 },
+      { type: 'ICU_BED', specialization: 'ICU', count: 0 },
+      { type: 'OT', specialization: 'SURGERY', count: 0 },
+      { type: 'AMBULANCE', specialization: 'EMERGENCY', count: 0 }
+    ];
+    
     const specMap = new Map();
-    resourceDetailed.forEach(r => {
-      const id = `${r.type}-${r.specialization || 'GEN'}`;
-      if (!specMap.has(id)) {
-        specMap.set(id, { type: r.type, specialization: r.specialization, count: 0 });
-      }
-      specMap.get(id).count += 1;
-    });
+    baseOptions.forEach(opt => specMap.set(`${opt.type}-${opt.specialization || 'GEN'}`, { ...opt }));
+
+    if (resourceDetailed && Array.isArray(resourceDetailed)) {
+      resourceDetailed.forEach(r => {
+        const id = `${r.type}-${r.specialization || 'GEN'}`;
+        if (!specMap.has(id)) {
+          specMap.set(id, { type: r.type, specialization: r.specialization, count: 0 });
+        }
+        specMap.get(id).count += 1;
+      });
+    }
     return Array.from(specMap.values());
   }, [resourceDetailed]);
 
