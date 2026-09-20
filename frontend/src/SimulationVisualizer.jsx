@@ -231,13 +231,13 @@ export default function SimulationVisualizer() {
             const totalSlots = 14;
 
             return (
-              <div key={dept.key} className="department-track-row">
-                <div className="dept-track-label">
-                  <span className="dept-name-badge" style={{ background: dept.color }}>{dept.label}</span>
-                  <span className="waiting-count">{deptQueueList.length} Waiting</span>
+              <div className="compact-dept-row-micro" key={dept.key}>
+                <div className="micro-dept-label">
+                  <strong>{dept.label}</strong>
+                  <span className="micro-queue-badge">{deptQueueList.length} Waiting</span>
                 </div>
 
-                <div className="micro-slots-track">
+                <div className="micro-track-slots">
                   {(() => {
                     const slots = [];
                     for (let i = 0; i < totalSlots; i++) {
