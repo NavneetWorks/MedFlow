@@ -6,6 +6,7 @@ import { Scheduler, CycleSummary } from '../scheduler/Scheduler';
 import { PatientRepository, ResourceRepository, MetricsRepository } from '../db';
 import { CreatePatientDTO } from '../patients/patientValidator';
 import { Patient } from '../types/patient';
+import { calculateDynamicPriorityScore } from '../scheduler/PriorityEngine';
 
 export class SimulationEngine {
   public clock: SimulationClock;
@@ -58,6 +59,9 @@ export class SimulationEngine {
         priorityScore: p.priorityScore ?? 0,
         requiredResources: p.requiredResources ?? []
       };
+      
+      // Pre-calculate baseline score (time = arrivalTime, waitTime = 0)
+      calculateDynamicPriorityScore(patientRecord as any, p.arrivalTime);
       
       return this.repository.savePatientToDb(patientRecord).catch(err => {
         console.warn(`[SimulationEngine] Failed to save scheduled patient ${p.id} to DB:`, err);
