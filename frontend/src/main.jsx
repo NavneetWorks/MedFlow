@@ -10,7 +10,6 @@ import LiveQueue from './LiveQueue';
 import PatientDetails from './PatientDetails';
 import HospitalOperations from './HospitalOperations';
 import Analytics from './Analytics';
-import ResourcePanel from './ResourcePanel';
 import { useSimulationSocket } from './hooks/useSimulationSocket';
 
 const patients = [
@@ -58,7 +57,6 @@ function App() {
   const [showControls, setShowControls] = useState(true);
   const [page, setPage] = useState('dashboard');
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [showResourceSidebar, setShowResourceSidebar] = useState(false);
   const queue = useMemo(() => {
     const urgency = { Urgent: 4, High: 3, Moderate: 2, Stable: 1 };
     const sorted = [...patients].sort((a, b) => {
@@ -83,7 +81,7 @@ function App() {
       </nav>
       <div className="sidebar-bottom">
         <a><CircleAlert size={18}/>Alerts <span className="alert-dot"/></a>
-        <a onClick={() => setShowResourceSidebar(true)} style={{cursor: 'pointer'}}><Settings size={18}/>Resource Mgmt</a>
+        <a onClick={() => setPage('operations')} style={{cursor: 'pointer'}}><Settings size={18}/>Resource Mgmt</a>
       </div>
     </aside>
 
@@ -130,8 +128,6 @@ function App() {
       <section className="panel resource-panel"><div className="section-heading"><div><p className="eyebrow">RESOURCE CAPACITY</p><h2>Hospital utilization</h2></div><button className="link-button">View all resources <ArrowRight size={16}/></button></div><div className="resource-grid">{resources.map(r => { const Icon = r.icon; return <div className="resource" key={r.label}><div className="resource-title"><span className="resource-icon"><Icon size={19}/></span><span>{r.label}</span><b>{Math.round(r.used/r.total*100)}%</b></div><Utilization used={r.used} total={r.total}/></div>})}</div></section>
       </> : page === 'queue' ? <LiveQueue patients={queue} strategy={strategy} surge={surge} failure={failure} onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
     </section>
-    
-    <ResourcePanel isOpen={showResourceSidebar} onClose={() => setShowResourceSidebar(false)} />
   </main>;
 }
 
