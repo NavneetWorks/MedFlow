@@ -112,7 +112,18 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    // 3. Handle simulation start/pause/speed controls via WebSocket
+    // 3. Handle bulk patient scheduling from Frontend setup
+    socket.on('patients:schedule', (patientsArray: any[]) => {
+      console.log(`[Socket.IO] Received ${patientsArray?.length || 0} staged patients for scheduling.`);
+      if (!globalEngine) {
+        socket.emit('patients:schedule_response', { success: false, error: 'Engine not initialized' });
+        return;
+      }
+      globalEngine.schedulePatients(patientsArray);
+      socket.emit('patients:schedule_response', { success: true });
+    });
+
+    // 4. Handle simulation start/pause/speed controls via WebSocket
     socket.on('sim:start', () => {
       console.log('[Socket.IO] Command: START SIMULATION');
       globalEngine?.startSimulation();

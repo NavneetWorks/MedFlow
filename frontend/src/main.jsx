@@ -10,6 +10,7 @@ import LiveQueue from './LiveQueue';
 import PatientDetails from './PatientDetails';
 import HospitalOperations from './HospitalOperations';
 import Analytics from './Analytics';
+import PatientSetup from './PatientSetup';
 import { useSimulationSocket } from './hooks/useSimulationSocket';
 
 const patients = [
@@ -78,6 +79,7 @@ function App() {
         <a><Users size={18}/>Patients</a>
         <a className={page === 'operations' ? 'nav-active' : ''} onClick={() => setPage('operations')}><BedDouble size={18}/>Hospital Operations</a>
         <a className={page === 'analytics' ? 'nav-active' : ''} onClick={() => setPage('analytics')}><MonitorCog size={18}/>Analytics</a>
+        <a className={page === 'setup' ? 'nav-active' : ''} onClick={() => setPage('setup')}><Users size={18}/>Simulation Setup</a>
       </nav>
       <div className="sidebar-bottom">
         <a><CircleAlert size={18}/>Alerts <span className="alert-dot"/></a>
@@ -87,7 +89,7 @@ function App() {
 
     <section className="shell">
       <header>
-        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : 'Patient Details'}</h1></div>
+        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : page === 'setup' ? 'Simulation Setup' : 'Patient Details'}</h1></div>
         <div className="header-actions"><span className="updated"><span className="live-dot"/> Live · Updated just now</span><button className="icon-button"><Menu size={19}/></button><div className="avatar">NK</div></div>
       </header>
 
@@ -126,7 +128,7 @@ function App() {
       </section>
 
       <section className="panel resource-panel"><div className="section-heading"><div><p className="eyebrow">RESOURCE CAPACITY</p><h2>Hospital utilization</h2></div><button className="link-button">View all resources <ArrowRight size={16}/></button></div><div className="resource-grid">{resources.map(r => { const Icon = r.icon; return <div className="resource" key={r.label}><div className="resource-title"><span className="resource-icon"><Icon size={19}/></span><span>{r.label}</span><b>{Math.round(r.used/r.total*100)}%</b></div><Utilization used={r.used} total={r.total}/></div>})}</div></section>
-      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
+      </> : page === 'queue' ? <LiveQueue onFullDetails={(patient) => { setSelectedPatient(patient); setPage('patient'); }} /> : page === 'operations' ? <HospitalOperations failure={failure} doctors={doctors} /> : page === 'analytics' ? <Analytics /> : page === 'setup' ? <PatientSetup onDeploy={() => setPage('dashboard')} /> : <PatientDetails patient={selectedPatient || patients[0]} onBack={() => setPage('queue')} />}
     </section>
   </main>;
 }

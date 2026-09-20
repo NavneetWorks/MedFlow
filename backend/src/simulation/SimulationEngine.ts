@@ -19,6 +19,7 @@ export class SimulationEngine {
 
   private completedCount: number = 0;
   private onCycleCallback?: (summary: CycleSummary, fullQueuesState: Record<string, any[]>) => void;
+  private scheduledPatients: any[] = [];
 
   constructor() {
     this.clock = new SimulationClock(0);
@@ -40,6 +41,22 @@ export class SimulationEngine {
 
   public setOnCycleCallback(callback: (summary: CycleSummary, fullQueuesState: Record<string, any[]>) => void): void {
     this.onCycleCallback = callback;
+  }
+
+  /**
+   * Buffers patients to be injected into the simulation at their specified arrivalTime.
+   */
+  public schedulePatients(patients: any[]): void {
+    this.scheduledPatients.push(...patients);
+    
+    // Asynchronously save them to DB immediately with 'REGISTERED' status
+    patients.forEach(p => {
+      this.repository.savePatientToDb({...p, status: 'REGISTERED'}).catch(err => {
+        console.warn(`[SimulationEngine] Failed to save scheduled patient ${p.id} to DB:`, err);
+      });
+    });
+
+    console.log(`[SimulationEngine] Buffered and saved ${patients.length} patients for future injection.`);
   }
 
   /**
@@ -90,6 +107,17 @@ export class SimulationEngine {
    * Handles periodic simulation clock tick (Every 1 simulation minute).
    */
   private handleSimulationTick(simTimeMinutes: number): void {
+    // 0. Inject scheduled patients that have arrived
+    const arrivedPatients = this.scheduledPatients.filter(p => p.arrivalTime <= simTimeMinutes);
+    this.scheduledPatients = this.scheduledPatients.filter(p => p.arrivalTime > simTimeMinutes);
+
+    for (const patient of arrivedPatients) {
+      // Background async save & enqueue
+      this.addPatient(patient).catch(err => {
+        console.error('[SimulationEngine] Error injecting scheduled patient:', err);
+      });
+    }
+
     // 1. Recalculate Dynamic Priority Scores & Re-Sort Queues
     this.queueManager.recalculateAndSortAll(simTimeMinutes);
 
