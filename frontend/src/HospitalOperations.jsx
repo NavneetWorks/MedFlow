@@ -74,10 +74,19 @@ export default function HospitalOperations({ failure }) {
   // --- Live Data Calculations ---
   const totalDoctors = resourceStatus?.['DOCTOR']?.total || 0;
   const availableDoctors = resourceStatus?.['DOCTOR']?.available || 0;
+  const busyDoctors = totalDoctors - availableDoctors;
   
-  const totalBeds = (resourceStatus?.['BED']?.total || 0) + (resourceStatus?.['ICU_BED']?.total || 0);
-  const availableBeds = (resourceStatus?.['BED']?.available || 0) + (resourceStatus?.['ICU_BED']?.available || 0);
+  const totalNurses = resourceStatus?.['NURSE']?.total || 0;
+  const availableNurses = resourceStatus?.['NURSE']?.available || 0;
+  const busyNurses = totalNurses - availableNurses;
+  
+  const totalBeds = (resourceStatus?.['BED']?.total || 0) + (resourceStatus?.['ICU_BED']?.total || 0) + (resourceStatus?.['OT']?.total || 0);
+  const availableBeds = (resourceStatus?.['BED']?.available || 0) + (resourceStatus?.['ICU_BED']?.available || 0) + (resourceStatus?.['OT']?.available || 0);
   const occupiedBeds = totalBeds - availableBeds;
+
+  const totalEquip = (resourceStatus?.['EQUIPMENT']?.total || 0) + (resourceStatus?.['AMBULANCE']?.total || 0);
+  const availEquip = (resourceStatus?.['EQUIPMENT']?.available || 0) + (resourceStatus?.['AMBULANCE']?.available || 0);
+  const busyEquip = totalEquip - availEquip;
 
   const liveDepartments = useMemo(() => {
     const depts = ['EMERGENCY', 'CARDIOLOGY', 'ORTHOPEDICS', 'GENERAL', 'ICU', 'OT'];
@@ -115,15 +124,31 @@ export default function HospitalOperations({ failure }) {
     }));
   }, [resourceDetailed]);
 
-  const doctorTooltip = availableSpecs
-    .filter(s => s.type === 'DOCTOR' && s.count > 0)
-    .map(s => `${s.specialization || 'General'}: ${s.count}`)
-    .join('\n') || 'No doctors configured';
+  const buildTooltip = (typesArray) => {
+    if (!resourceDetailed || !Array.isArray(resourceDetailed)) return 'No resources configured';
+    const relevant = resourceDetailed.filter(r => typesArray.includes(r.type));
+    if (relevant.length === 0) return 'None configured';
+    const map = new Map();
+    relevant.forEach(r => {
+      const spec = r.specialization || 'General';
+      const key = `${r.type.replace('_', ' ')} - ${spec}`;
+      if (!map.has(key)) map.set(key, { total: 0, available: 0, busy: 0 });
+      const counts = map.get(key);
+      counts.total++;
+      if (r.status === 'AVAILABLE') counts.available++;
+      else counts.busy++;
+    });
+    let lines = [];
+    map.forEach((counts, key) => {
+      lines.push(`${key}: ${counts.available} Free / ${counts.busy} Busy`);
+    });
+    return lines.join('\n');
+  };
 
-  const roomTooltip = availableSpecs
-    .filter(s => (s.type === 'BED' || s.type === 'ICU_BED' || s.type === 'OT') && s.count > 0)
-    .map(s => `${s.type.replace('_', ' ')} (${s.specialization || 'General'}): ${s.count}`)
-    .join('\n') || 'No rooms configured';
+  const doctorTooltip = buildTooltip(['DOCTOR']);
+  const nurseTooltip = buildTooltip(['NURSE']);
+  const roomTooltip = buildTooltip(['BED', 'ICU_BED', 'OT']);
+  const equipmentTooltip = buildTooltip(['EQUIPMENT', 'AMBULANCE']);
 
   return <div className="operations-page">
     <section className="operations-intro"><div><p className="eyebrow">CAPACITY & ALLOCATION</p><h2>Hospital resource operations</h2><p>Live view of capacity, staff allocation, department load, and active operational constraints.</p></div><span className="ops-live"><i className="live-dot"/>LIVE OPERATIONS</span></section>
@@ -131,10 +156,19 @@ export default function HospitalOperations({ failure }) {
     <section className="ops-kpis">
       <OpsKpi value={totalDoctors} label="Total doctors" title={doctorTooltip} />
       <OpsKpi value={availableDoctors} label="Available doctors" tone="green" title={doctorTooltip} />
-      <OpsKpi value={totalDoctors - availableDoctors} label="Consulting doctors" title={doctorTooltip} />
+      <OpsKpi value={busyDoctors} label="Consulting doctors" title={doctorTooltip} />
+      
+      <OpsKpi value={totalNurses} label="Total nurses" title={nurseTooltip} />
+      <OpsKpi value={availableNurses} label="Available nurses" tone="green" title={nurseTooltip} />
+      <OpsKpi value={busyNurses} label="Busy nurses" title={nurseTooltip} />
+
       <OpsKpi value={totalBeds} label="Total rooms" title={roomTooltip} />
       <OpsKpi value={availableBeds} label="Available rooms" tone="green" title={roomTooltip} />
       <OpsKpi value={occupiedBeds} label="Occupied rooms" tone="warning" title={roomTooltip} />
+
+      <OpsKpi value={totalEquip} label="Total equipment" title={equipmentTooltip} />
+      <OpsKpi value={availEquip} label="Available equipment" tone="green" title={equipmentTooltip} />
+      <OpsKpi value={busyEquip} label="In-use equipment" tone="warning" title={equipmentTooltip} />
     </section>
 
     <section className="operations-alerts">
