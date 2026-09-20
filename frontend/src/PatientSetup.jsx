@@ -65,6 +65,18 @@ function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const getMaxId = () => {
+    let max = 0;
+    const all = [...historyPatients, ...stagedPatients];
+    for (const p of all) {
+      if (p.id && p.id.startsWith('P')) {
+        const num = parseInt(p.id.substring(1), 10);
+        if (!isNaN(num) && num > max) max = num;
+      }
+    }
+    return max;
+  };
+
   const handleAddPatient = () => {
     if (!basicInfo.name) {
       showToast("Please enter a patient name", "error");
@@ -75,10 +87,12 @@ function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
       return;
     }
 
+    const nextId = `P${getMaxId() + 1}`;
+
     const newPatient = {
-      id: `PAT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: nextId,
       name: basicInfo.name,
-      age: Number(basicInfo.age),
+      age: parseInt(basicInfo.age),
       department: basicInfo.department,
       arrivalTime: Number(basicInfo.arrivalTime),
       treatmentDuration: Number(basicInfo.treatmentDuration),
@@ -306,7 +320,7 @@ function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
                   <div key={p.id} className="staged-item">
                     <div className="staged-header" onClick={() => setExpandedId(isExpanded ? null : p.id)}>
                       <div className="staged-title">
-                        <b>{p.name} (Age {p.age})</b>
+                        <b><span style={{fontSize: '12px', color: 'var(--text-light)', fontWeight: '600', marginRight: '6px'}}>{p.id}</span> {p.name} (Age {p.age})</b>
                         <span>{p.department}</span>
                       </div>
                       <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
@@ -370,11 +384,8 @@ function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
                 <div key={p.id} className="history-item">
                   <div className="history-header" onClick={() => setExpandedHistoryId(isExpanded ? null : p.id)}>
                     <div className="h-col name">
-                      <b style={{display: 'flex', alignItems: 'center'}}>
-                        <span style={{fontSize: '13px', color: 'var(--text-light)', fontWeight: '600', marginRight: '8px'}}>#{idx + 1}</span>
-                        {p.name}
-                      </b>
-                      <span style={{marginLeft: '26px'}}>Age {p.age}</span>
+                      <b><span style={{fontSize: '12px', color: 'var(--text-light)', fontWeight: '600', marginRight: '6px'}}>{p.id}</span> {p.name}</b>
+                      <span>Age {p.age}</span>
                     </div>
                     <div className="h-col dept">
                       <b>{p.department}</b>
