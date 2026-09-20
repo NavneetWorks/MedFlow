@@ -11,7 +11,7 @@ export default function ResourcePanel({ isOpen, onClose }) {
 
   // Compute unique specializations/types from detailed backend state
   const availableSpecs = React.useMemo(() => {
-    if (!resourceDetailed) return [];
+    if (!resourceDetailed || !Array.isArray(resourceDetailed)) return [];
     
     // Create a map to get count per unique (type + specialization)
     const specMap = new Map();
