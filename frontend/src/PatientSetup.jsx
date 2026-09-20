@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Users, Activity, Clock3, Send, Plus, ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
-import { io } from 'socket.io-client';
+import socket from './services/socketManager';
 import './setup.css';
 
 const DEPARTMENTS = [
@@ -93,18 +93,21 @@ function PatientSetup({ onDeploy }) {
     if (stagedPatients.length === 0) return;
     
     // Connect to socket and emit scheduled patients
-    const socket = io('http://localhost:3001'); // Assume default port
     socket.emit('patients:schedule', stagedPatients);
     
-    socket.on('patients:schedule_response', (response) => {
+    // Create a one-time listener for the response
+    const handleResponse = (response) => {
       if (response.success) {
         alert(`Successfully deployed ${stagedPatients.length} patients to Backend Buffer!`);
+        setStagedPatients([]); // clear the list
         if(onDeploy) onDeploy(); // Optional callback to switch to dashboard
       } else {
         alert("Error deploying patients: " + response.error);
       }
-      socket.disconnect();
-    });
+      socket.off('patients:schedule_response', handleResponse);
+    };
+    
+    socket.on('patients:schedule_response', handleResponse);
   };
 
   return (
