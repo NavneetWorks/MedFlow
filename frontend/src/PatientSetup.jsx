@@ -16,7 +16,7 @@ function PatientSetup({ onDeploy }) {
   
   // Form State
   const [basicInfo, setBasicInfo] = useState({
-    name: '', age: 30, department: 'EMERGENCY_ER', arrivalTime: 0, 
+    name: '', age: 30, department: '', arrivalTime: 0, 
     treatmentDuration: 30, deteriorationRate: 15
   });
 
@@ -49,6 +49,10 @@ function PatientSetup({ onDeploy }) {
   const handleAddPatient = () => {
     if (!basicInfo.name) {
       alert("Please enter a patient name");
+      return;
+    }
+    if (!basicInfo.department) {
+      alert("Please select a department");
       return;
     }
 
@@ -106,7 +110,7 @@ function PatientSetup({ onDeploy }) {
   return (
     <div className="setup-page">
       <div className="setup-intro">
-        <h2>Simulation Setup: Patient Roster</h2>
+        <h2>Patient Intake Form</h2>
         <p>Configure patient clinical details and arrival timeline before starting the simulation.</p>
       </div>
 
@@ -130,6 +134,7 @@ function PatientSetup({ onDeploy }) {
             <div>
               <label className="form-label">Department</label>
               <select className="form-select" value={basicInfo.department} onChange={e => setBasicInfo({...basicInfo, department: e.target.value})}>
+                <option value="" disabled>--- Select Department ---</option>
                 {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
@@ -139,8 +144,10 @@ function PatientSetup({ onDeploy }) {
             </div>
           </div>
 
-          <div className="section-title"><Activity size={14} className="inline-icon" /> Core Vitals</div>
-          <div className="form-row">
+          {basicInfo.department && (
+            <>
+              <div className="section-title"><Activity size={14} className="inline-icon" /> Core Vitals</div>
+              <div className="form-row">
             <div>
               <label className="form-label">SpO2 (%)</label>
               <input type="number" className="form-input" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} />
@@ -249,6 +256,8 @@ function PatientSetup({ onDeploy }) {
           <button className="btn-add" onClick={handleAddPatient}>
             <Plus size={16} /> Add to Timeline
           </button>
+            </>
+          )}
         </div>
 
         {/* Right Column: Staged Timeline */}

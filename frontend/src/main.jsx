@@ -79,7 +79,7 @@ function App() {
         <a><Users size={18}/>Patients</a>
         <a className={page === 'operations' ? 'nav-active' : ''} onClick={() => setPage('operations')}><BedDouble size={18}/>Hospital Operations</a>
         <a className={page === 'analytics' ? 'nav-active' : ''} onClick={() => setPage('analytics')}><MonitorCog size={18}/>Analytics</a>
-        <a className={page === 'setup' ? 'nav-active' : ''} onClick={() => setPage('setup')}><Users size={18}/>Simulation Setup</a>
+        <a className={page === 'setup' ? 'nav-active' : ''} onClick={() => setPage('setup')}><Users size={18}/>Patient Intake Form</a>
       </nav>
       <div className="sidebar-bottom">
         <a><CircleAlert size={18}/>Alerts <span className="alert-dot"/></a>
@@ -89,7 +89,7 @@ function App() {
 
     <section className="shell">
       <header>
-        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : page === 'setup' ? 'Simulation Setup' : 'Patient Details'}</h1></div>
+        <div><p className="eyebrow">HOSPITAL OPERATIONS</p><h1>{page === 'dashboard' ? 'Dashboard' : page === 'queue' ? 'Live Queue' : page === 'operations' ? 'Hospital Operations' : page === 'analytics' ? 'Analytics' : page === 'setup' ? 'Patient Intake Form' : 'Patient Details'}</h1></div>
         <div className="header-actions"><span className="updated"><span className="live-dot"/> Live · Updated just now</span><button className="icon-button"><Menu size={19}/></button><div className="avatar">NK</div></div>
       </header>
 
