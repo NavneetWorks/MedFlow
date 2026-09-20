@@ -1,0 +1,187 @@
+/* Scoped CSS for the new Resource Panel to prevent interference with existing UI */
+
+.resource-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.resource-panel-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.resource-panel {
+  width: 400px;
+  height: 100%;
+  background-color: #fff;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-panel-overlay.open .resource-panel {
+  transform: translateX(0);
+}
+
+.resource-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f4f4f4;
+}
+
+.resource-panel header div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resource-panel header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #161616;
+}
+
+.resource-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #525252;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.resource-panel-close:hover {
+  color: #161616;
+}
+
+.resource-panel-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.resource-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resource-config-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #393939;
+}
+
+.resource-config-form select,
+.resource-config-form input {
+  padding: 10px 12px;
+  border: 1px solid #8d8d8d;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+.resource-config-form select:focus,
+.resource-config-form input:focus {
+  border-color: #0f62fe;
+}
+
+.btn-add-draft {
+  background-color: #f4f4f4;
+  color: #161616;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.btn-add-draft:hover {
+  background-color: #e5e5e5;
+}
+
+.staged-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.staged-changes h3 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #f4f4f4;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.draft-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.draft-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.btn-deploy {
+  background-color: #0f62fe;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.btn-deploy:disabled {
+  background-color: #8d8d8d;
+  cursor: not-allowed;
+}
+
+.btn-deploy:hover:not(:disabled) {
+  background-color: #0353e9;
+}
