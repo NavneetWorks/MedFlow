@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, Activity, Clock, Stethoscope, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Play, RotateCcw, Activity, Clock, Stethoscope, CheckCircle2 } from 'lucide-react';
 import { useSimulationSocket } from './hooks/useSimulationSocket';
 import './visualizer.css';
 
@@ -38,7 +38,7 @@ export default function SimulationVisualizer() {
   const isRunning = simState?.isRunning || false;
   const simTime = Math.floor(simState?.simTimeMinutes || 0);
 
-  // Set of patient IDs that are currently in any department waiting queue
+  // Set of patient IDs currently in any department waiting queue
   const queuedPatientIds = new Set(
     Object.values(queue || {}).flatMap(q => Array.isArray(q) ? q.map(p => p.id) : [])
   );
@@ -53,7 +53,6 @@ export default function SimulationVisualizer() {
   const completedPatients = (liveCompletedPatients && liveCompletedPatients.length > 0)
     ? liveCompletedPatients
     : (historyPatients || []).filter(p => p.status === 'COMPLETED');
-  const completedPatientIds = new Set(completedPatients.map(p => p.id));
 
   // Extract registered/incoming patients for the Intake Station Box (ONLY future arrivals that have NOT reached arrivalTime yet)
   const incomingPatients = (historyPatients || []).filter(p => {
@@ -86,7 +85,7 @@ export default function SimulationVisualizer() {
 
   // --- Live Resource Calculation Helpers ---
   const getDoctorCounts = (deptKey) => {
-    const docs = (resourceDetailed || []).filter(r => r.resourceType === 'DOCTOR' && r.specialization === deptKey);
+    const docs = (resourceDetailed || []).filter(r => r.resourceType === 'DOCTOR' && (r.specialization === deptKey || (deptKey === 'EMERGENCY_ER' && r.specialization === 'EMERGENCY') || (deptKey === 'GENERAL_SURGERY' && r.specialization === 'SURGERY')));
     if (docs.length > 0) {
       const avail = docs.filter(r => r.status === 'AVAILABLE').length;
       return { avail, total: docs.length };
@@ -157,44 +156,40 @@ export default function SimulationVisualizer() {
         </div>
       </header>
 
-      {/* 2. UNIFORM HOSPITAL RESOURCE INVENTORY PANEL */}
-      <section className="resource-inventory-strip panel">
-        <div className="inventory-group">
-          <div className="group-label">
-            <Stethoscope size={13} color="#0f62fe" />
-            <span>Doctors:</span>
-          </div>
-          <div className="badges-inline">
+      {/* 2. SEPARATE UNIFORM HOSPITAL RESOURCE INVENTORY PANEL */}
+      <section className="hospital-resource-panel panel">
+        <div className="resource-row-group">
+          <span className="group-title">
+            <Stethoscope size={13} /> Doctors:
+          </span>
+          <div className="clean-badge-list">
             {DEPARTMENTS.map(dept => {
-              const counts = getDoctorCounts(dept.key);
-              const isFull = counts.avail === counts.total;
+              const { avail, total } = getDoctorCounts(dept.key);
               return (
-                <div key={dept.key} className={`resource-badge doctor-badge ${!isFull ? 'in-use' : ''}`}>
+                <div key={dept.key} className="clean-resource-badge">
                   <span className="badge-name">{dept.docLabel}</span>
-                  <span className="badge-value"><b>{counts.avail}</b>/{counts.total}</span>
+                  <span className="badge-val">{avail}/{total}</span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="inventory-group">
-          <div className="group-label">
-            <Activity size={13} color="#007d79" />
-            <span>Resources:</span>
-          </div>
-          <div className="badges-inline">
-            <div className={`resource-badge ${nurseStats.avail < nurseStats.total ? 'in-use' : ''}`}>
+        <div className="resource-row-group">
+          <span className="group-title">
+            <Activity size={13} /> Resources:
+          </span>
+          <div className="clean-badge-list">
+            <div className="clean-resource-badge highlight">
               <span className="badge-name">Nurses Pool</span>
-              <span className="badge-value"><b>{nurseStats.avail}</b>/{nurseStats.total}</span>
+              <span className="badge-val">{nurseStats.avail}/{nurseStats.total}</span>
             </div>
             {EQUIPMENT_TYPES.map(eq => {
-              const counts = getEquipmentCounts(eq.key);
-              const isFull = counts.avail === counts.total;
+              const { avail, total } = getEquipmentCounts(eq.key);
               return (
-                <div key={eq.key} className={`resource-badge ${!isFull ? 'in-use' : ''}`}>
+                <div key={eq.key} className="clean-resource-badge">
                   <span className="badge-name">{eq.label}</span>
-                  <span className="badge-value"><b>{counts.avail}</b>/{counts.total}</span>
+                  <span className="badge-val">{avail}/{total}</span>
                 </div>
               );
             })}
@@ -202,62 +197,59 @@ export default function SimulationVisualizer() {
         </div>
       </section>
 
-      {/* 3. PATIENT INTAKE STATION */}
-      <section className="intake-station-panel panel">
-        <div className="intake-header-line">
-          <div className="intake-title">
-            <Activity size={14} color="#0f62fe"/>
-            <span><b>Intake Station:</b> ({incomingPatients.length} Incoming)</span>
-          </div>
-          {incomingPatients.length === 0 && (
-            <span className="intake-empty-txt">No incoming patients scheduled.</span>
-          )}
+      {/* 3. COMPACT PATIENT INTAKE STRIP */}
+      <section className="intake-strip-compact panel">
+        <div className="intake-label-compact">
+          <Activity size={14}/>
+          <span><b>Intake Station:</b> ({incomingPatients.length} Incoming)</span>
         </div>
 
-        {incomingPatients.length > 0 && (
-          <div className="intake-chips-container">
-            {incomingPatients.map(p => (
-              <div key={p.id} className="intake-patient-chip">
-                <span className="chip-id">{p.id}</span>
-                <span className="chip-score">{getPatientScore(p)}</span>
+        <div className="intake-chips-compact">
+          {incomingPatients.length === 0 ? (
+            <span className="empty-strip-txt">No incoming patients scheduled.</span>
+          ) : (
+            incomingPatients.map(p => (
+              <div key={p.id} className="micro-slot-box intake-box">
+                <span className="micro-id">{p.id}</span>
+                <span className="micro-score">{getPatientScore(p)}</span>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
 
-      {/* 4. DEPARTMENT WAITING QUEUE TRACKS (14 SLOTS EACH) */}
-      <section className="queues-tracks-section panel">
-        <div className="queues-tracks-container">
+      {/* 4. ULTRA-COMPACT 7 DEPARTMENT QUEUES */}
+      <section className="queues-section-compact panel">
+        <div className="compact-queues-list">
           {DEPARTMENTS.map(dept => {
-            const deptQueueList = queue?.[dept.key] || [];
-            const waitingCount = deptQueueList.length;
-
+            const deptQueueList = Array.isArray(queue?.[dept.key]) ? queue[dept.key] : [];
+            const totalSlots = Math.max(14, deptQueueList.length + 2);
+            
             return (
-              <div key={dept.key} className="department-track-row">
-                <div className="track-dept-header">
-                  <span className="dept-title-text">{dept.label}</span>
-                  <span className="dept-wait-count">{waitingCount} Waiting</span>
+              <div className="compact-dept-row-micro" key={dept.key}>
+                <div className="micro-dept-label">
+                  <strong>{dept.label}</strong>
+                  <span className="micro-queue-badge">{deptQueueList.length} Waiting</span>
                 </div>
 
-                <div className="track-slots-wrapper">
+                <div className="micro-track-slots">
                   {(() => {
                     const slots = [];
-                    for (let i = 0; i < 14; i++) {
-                      const patient = deptQueueList[i];
-                      if (patient) {
+                    for (let i = 0; i < totalSlots; i++) {
+                      const p = deptQueueList[i];
+                      if (p) {
                         slots.push(
-                          <div key={patient.id} className="patient-slot-card filled">
-                            <div className="slot-index">[{i}]</div>
-                            <b className="p-id">{patient.id}</b>
-                            <span className="p-score">{getPatientScore(patient)}</span>
+                          <div key={p.id || i} className="micro-slot-box occupied">
+                            <span className="micro-idx">[{i}]</span>
+                            <span className="micro-id">{p.id}</span>
+                            <span className="micro-score">{getPatientScore(p)}</span>
                           </div>
                         );
                       } else {
                         slots.push(
-                          <div key={`empty-${i}`} className="patient-slot-card empty">
-                            <div className="slot-index">[{i}]</div>
-                            <span className="dot">-</span>
+                          <div key={`empty-${dept.key}-${i}`} className="micro-slot-box empty">
+                            <span className="micro-idx">[{i}]</span>
+                            <span className="micro-dash">-</span>
                           </div>
                         );
                       }
@@ -333,7 +325,7 @@ export default function SimulationVisualizer() {
         </div>
       </section>
 
-      {/* 6. NEW: COMPLETED / DISCHARGED PATIENTS TRACK */}
+      {/* 6. COMPLETED PATIENTS TRACK */}
       <section className="completed-track-section panel">
         <div className="completed-label-compact">
           <CheckCircle2 size={13} color="#166534" />
