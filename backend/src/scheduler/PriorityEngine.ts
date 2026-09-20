@@ -59,6 +59,12 @@ export function calculatePatientDepartmentScore(patient: Patient): DepartmentSco
   }
 }
 
+function toNum(val: any, fallback?: number): number | undefined {
+  if (val === undefined || val === null || val === '') return fallback;
+  const num = Number(val);
+  return isNaN(num) ? fallback : num;
+}
+
 /**
  * Calculates dynamic priority score P for a patient at simulation time t.
  *
@@ -70,14 +76,16 @@ export function calculateDynamicPriorityScore(
   currentSimTimeMinutes: number,
   weights: PriorityWeights = DEFAULT_PRIORITY_WEIGHTS
 ): number {
-  // 1. Initial Intake Clinical Score (C_intake)
-  let C_intake: number;
   const pAny = patient as any;
-  const rawBase = patient.baseCriticalLevel ?? pAny.base_critical_level ?? patient.priorityScore ?? pAny.priority_score ?? patient.criticalLevel ?? pAny.critical_level;
 
-  if (typeof rawBase === 'number' && rawBase > 0) {
-    C_intake = rawBase;
-    patient.baseCriticalLevel = rawBase;
+  // 1. Safely parse initial base score
+  const rawBase = patient.baseCriticalLevel ?? pAny.base_critical_level ?? patient.priorityScore ?? pAny.priority_score ?? patient.criticalLevel ?? pAny.critical_level;
+  const numBase = toNum(rawBase, undefined);
+
+  let C_intake: number;
+  if (numBase !== undefined && numBase > 0) {
+    C_intake = numBase;
+    patient.baseCriticalLevel = numBase;
   } else {
     const departmentResult = calculatePatientDepartmentScore(patient);
     C_intake = departmentResult.departmentScore;
@@ -85,23 +93,29 @@ export function calculateDynamicPriorityScore(
   }
 
   // Set treatment duration if not fixed
-  if (!patient.treatmentDuration || patient.treatmentDuration === 0) {
+  const rawDuration = toNum(patient.treatmentDuration ?? pAny.treatment_duration, 0);
+  if (!rawDuration || rawDuration === 0) {
     const departmentResult = calculatePatientDepartmentScore(patient);
     patient.treatmentDuration = departmentResult.estimatedDuration;
+  } else {
+    patient.treatmentDuration = rawDuration;
   }
 
   // 2. Elapsed Queue Wait Time
-  const waitMinutes = patient.waitingStartTime !== undefined ? currentSimTimeMinutes - patient.waitingStartTime : 0;
-  const waitHours = Math.max(0, waitMinutes) / 60;
+  const rawWaitStart = toNum(patient.waitingStartTime ?? pAny.waiting_start_time, currentSimTimeMinutes);
+  patient.waitingStartTime = rawWaitStart;
+  const waitMinutes = Math.max(0, currentSimTimeMinutes - (rawWaitStart ?? currentSimTimeMinutes));
+  const waitHours = waitMinutes / 60;
 
   // 3. Dynamic Critical Level C(t): Deterioration Rate (D) multiplied by Waiting Hours
-  const D = patient.deteriorationRate ?? 15; // default 15 points/hour
+  const D = toNum(patient.deteriorationRate ?? pAny.deterioration_rate, 15) ?? 15;
+  patient.deteriorationRate = D;
   const dynamicCriticalLevel = Math.min(100, C_intake + D * waitHours);
   patient.criticalLevel = Number(dynamicCriticalLevel.toFixed(2));
 
   // 4. Wait Time Penalty Score Ws (0 to 100) - Target benchmark max wait = 120 mins
   const maxBenchmarkWait = 120;
-  const Ws = Math.min(100, (Math.max(0, waitMinutes) / maxBenchmarkWait) * 100);
+  const Ws = Math.min(100, (waitMinutes / maxBenchmarkWait) * 100);
 
   // 5. Treatment Duration Throughput Score Ts (0 to 100)
   const maxDurationBenchmark = 120;

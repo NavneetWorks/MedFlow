@@ -60,27 +60,14 @@ export default function SimulationVisualizer() {
     return arrTime > simTime && p.status === 'REGISTERED';
   });
 
-  // Helper to reliably extract priority score
+  // Helper to reliably extract priority score directly from backend
   const getPatientScore = (p) => {
     if (!p) return '-';
-    const rawScore = p.priority_score ?? p.priorityScore ?? p.dynamicPriorityScore ?? p.critical_level ?? p.criticalLevel;
+    const rawScore = p.priorityScore ?? p.priority_score ?? p.criticalLevel ?? p.critical_level;
     if (rawScore !== undefined && rawScore !== null && !isNaN(Number(rawScore))) {
       return Number(rawScore).toFixed(1);
     }
-    const vitals = typeof p.vitals === 'string' ? JSON.parse(p.vitals) : (p.vitals || {});
-    const spo2 = vitals.spo2 || 98;
-    const sys = vitals.systolicBP || vitals.bloodPressureSystolic || 120;
-    const hr = vitals.heartRate || 75;
-    const age = p.age || 40;
-
-    let est = 45;
-    if (spo2 < 92) est += 30;
-    else if (spo2 < 95) est += 15;
-    if (sys < 90 || sys > 180) est += 20;
-    if (hr > 110 || hr < 50) est += 15;
-    if (age > 65) est += 10;
-
-    return Math.min(99.9, est).toFixed(1);
+    return '-';
   };
 
   // --- Live Resource Calculation Helpers ---
