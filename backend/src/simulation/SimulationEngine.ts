@@ -46,11 +46,11 @@ export class SimulationEngine {
   /**
    * Buffers patients to be injected into the simulation at their specified arrivalTime.
    */
-  public schedulePatients(patients: any[]): void {
+  public async schedulePatients(patients: any[]): Promise<void> {
     this.scheduledPatients.push(...patients);
     
-    // Asynchronously save them to DB immediately with 'REGISTERED' status
-    patients.forEach(p => {
+    // Await all DB saves before returning
+    await Promise.all(patients.map(p => {
       const patientRecord = {
         ...p,
         status: 'REGISTERED',
@@ -59,10 +59,10 @@ export class SimulationEngine {
         requiredResources: p.requiredResources ?? []
       };
       
-      this.repository.savePatientToDb(patientRecord).catch(err => {
+      return this.repository.savePatientToDb(patientRecord).catch(err => {
         console.warn(`[SimulationEngine] Failed to save scheduled patient ${p.id} to DB:`, err);
       });
-    });
+    }));
 
     console.log(`[SimulationEngine] Buffered and saved ${patients.length} patients for future injection.`);
   }

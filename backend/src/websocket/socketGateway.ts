@@ -113,19 +113,23 @@ export function initSocketGateway(httpServer: HTTPServer): SocketIOServer {
     });
 
     // 3. Handle bulk patient scheduling from Frontend setup
-    socket.on('patients:schedule', (patientsArray: any[]) => {
+    socket.on('patients:schedule', async (patientsArray: any[]) => {
       console.log(`[Socket.IO] Received ${patientsArray?.length || 0} staged patients for scheduling.`);
       if (!globalEngine) {
         socket.emit('patients:schedule_response', { success: false, error: 'Engine not initialized' });
         return;
       }
-      globalEngine.schedulePatients(patientsArray);
+      
+      await globalEngine.schedulePatients(patientsArray);
       socket.emit('patients:schedule_response', { success: true });
       
-      // Auto-broadcast updated history to everyone
-      globalEngine.repository.getAllActivePatientsFromDb().then(history => {
+      // Auto-broadcast updated history to everyone AFTER db saves
+      try {
+        const history = await globalEngine.repository.getAllActivePatientsFromDb();
         io?.emit('patients:history_response', history);
-      }).catch(err => console.error(err));
+      } catch (err) {
+        console.error(err);
+      }
     });
 
     // 3.5 Handle explicit history fetch requests
