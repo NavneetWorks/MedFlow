@@ -85,7 +85,10 @@ export default function SimulationVisualizer() {
 
   // --- Live Resource Calculation Helpers ---
   const getDoctorCounts = (deptKey) => {
-    const docs = (resourceDetailed || []).filter(r => r.resourceType === 'DOCTOR' && (r.specialization === deptKey || (deptKey === 'EMERGENCY_ER' && r.specialization === 'EMERGENCY') || (deptKey === 'GENERAL_SURGERY' && r.specialization === 'SURGERY')));
+    const docs = (resourceDetailed || []).filter(r => {
+      const t = r.type || r.resourceType;
+      return t === 'DOCTOR' && (r.specialization === deptKey || (deptKey === 'EMERGENCY_ER' && r.specialization === 'EMERGENCY') || (deptKey === 'GENERAL_SURGERY' && r.specialization === 'SURGERY'));
+    });
     if (docs.length > 0) {
       const avail = docs.filter(r => r.status === 'AVAILABLE').length;
       return { avail, total: docs.length };
@@ -96,7 +99,7 @@ export default function SimulationVisualizer() {
   };
 
   const getNursesCounts = () => {
-    const nurses = (resourceDetailed || []).filter(r => r.resourceType === 'NURSE');
+    const nurses = (resourceDetailed || []).filter(r => (r.type || r.resourceType) === 'NURSE');
     if (nurses.length > 0) {
       const avail = nurses.filter(r => r.status === 'AVAILABLE').length;
       return { avail, total: nurses.length };
@@ -105,11 +108,12 @@ export default function SimulationVisualizer() {
   };
 
   const getEquipmentCounts = (typeKey) => {
-    const items = (resourceDetailed || []).filter(r => 
-      r.resourceType === typeKey || 
-      (r.resourceType === 'EQUIPMENT' && r.specialization === typeKey) ||
-      (typeKey === 'BED' && (r.resourceType === 'BED' || r.resourceType === 'ICU_BED'))
-    );
+    const items = (resourceDetailed || []).filter(r => {
+      const t = r.type || r.resourceType;
+      return t === typeKey || 
+        (t === 'EQUIPMENT' && r.specialization === typeKey) ||
+        (typeKey === 'BED' && (t === 'BED' || t === 'ICU_BED'));
+    });
     if (items.length > 0) {
       const avail = items.filter(r => r.status === 'AVAILABLE').length;
       return { avail, total: items.length };
