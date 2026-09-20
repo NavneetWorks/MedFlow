@@ -10,27 +10,23 @@ const DEPARTMENTS = [
   'GENERAL_SURGERY', 'PULMONOLOGY', 'PEDIATRICS'
 ];
 
-function PatientSetup({ onDeploy }) {
+function PatientSetup({ onDeploy, historyPatients, setHistoryPatients }) {
   const [stagedPatients, setStagedPatients] = useState([]);
-  const [historyPatients, setHistoryPatients] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
 
   useEffect(() => {
-    // Listen for history response
-    const handleHistory = (data) => {
-      setHistoryPatients(data);
-    };
-    
+    const handleHistory = (data) => setHistoryPatients(data);
     socket.on('patients:history_response', handleHistory);
-    // Request initial history
-    socket.emit('patients:history_request');
+    
+    // Only fetch if empty to prevent flashing on page switch
+    if (!historyPatients || historyPatients.length === 0) {
+      socket.emit('patients:history_request');
+    }
 
-    return () => {
-      socket.off('patients:history_response', handleHistory);
-    };
-  }, []);
+    return () => socket.off('patients:history_response', handleHistory);
+  }, [historyPatients, setHistoryPatients]);
   
   // Form State
   const [basicInfo, setBasicInfo] = useState({
@@ -359,7 +355,7 @@ function PatientSetup({ onDeploy }) {
           <div className="empty-state">No submitted patients found.</div>
         ) : (
           <div className="history-grid">
-            {historyPatients.map(p => {
+            {historyPatients.map((p, idx) => {
               const isExpanded = expandedHistoryId === p.id;
               
               // Safely parse JSONB symptoms and vitals
@@ -369,15 +365,16 @@ function PatientSetup({ onDeploy }) {
               const cardio = symptomsJson.cardiology;
               const neuro = symptomsJson.neurology;
               const trauma = symptomsJson.trauma;
-              
-              const shortId = "P-" + (p.id.includes('-') ? p.id.split('-').pop() : p.id.substring(0, 4));
 
               return (
                 <div key={p.id} className="history-item">
                   <div className="history-header" onClick={() => setExpandedHistoryId(isExpanded ? null : p.id)}>
                     <div className="h-col name">
-                      <b>{p.name} <span style={{fontSize: '11px', color: 'var(--text-light)', fontWeight: 'normal', marginLeft: '6px'}}>{shortId}</span></b>
-                      <span>Age {p.age}</span>
+                      <b style={{display: 'flex', alignItems: 'center'}}>
+                        <span style={{fontSize: '13px', color: 'var(--text-light)', fontWeight: '600', marginRight: '8px'}}>#{idx + 1}</span>
+                        {p.name}
+                      </b>
+                      <span style={{marginLeft: '26px'}}>Age {p.age}</span>
                     </div>
                     <div className="h-col dept">
                       <b>{p.department}</b>
