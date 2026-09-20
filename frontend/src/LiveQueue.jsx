@@ -16,16 +16,23 @@ const DEPARTMENTS = [
 ];
 
 export default function LiveQueue({ onFullDetails }) {
-  const { queue, simState } = useSimulationSocket();
+  const { queue, activeTreatments, simState } = useSimulationSocket();
   
   const [search, setSearch] = useState('');
   const [priority, setPriority] = useState('All priorities');
   const [viewMode, setViewMode] = useState('tracks'); // 'tracks' | 'table'
   const [selected, setSelected] = useState(null);
 
-  // Flatten and process queue data from the backend
+  // Flatten and process queue data from backend RAM + active treatments
   const allPatients = useMemo(() => {
     let patients = [];
+    
+    // Map of active treatments for quick lookup
+    const activeMap = new Map();
+    if (Array.isArray(activeTreatments)) {
+      activeTreatments.forEach(ap => activeMap.set(ap.id, ap));
+    }
+
     if (queue) {
       Object.keys(queue).forEach(dept => {
         const list = Array.isArray(queue[dept]) ? queue[dept] : [];
@@ -43,6 +50,8 @@ export default function LiveQueue({ onFullDetails }) {
           else if (crit >= 50 || scoreVal >= 50) prioLabel = 'High';
           else if (crit >= 25 || scoreVal >= 25) prioLabel = 'Moderate';
 
+          const activeInfo = activeMap.get(p.id);
+
           patients.push({
             id: p.id || '—',
             name: p.name || 'Unknown',
@@ -52,11 +61,11 @@ export default function LiveQueue({ onFullDetails }) {
             arrival: typeof p.arrivalTime === 'number' ? `Min ${p.arrivalTime}` : (p.arrivalTime || 'Just now'),
             wait: waitStr,
             waitTime: waitMins,
-            doctor: '—',
+            doctor: activeInfo?.allocatedResourceIds?.find(id => id.startsWith('DOC-')) || 'Waiting Allocation',
             resource: Array.isArray(p.requiredResources) && p.requiredResources.length > 0 
               ? p.requiredResources.map(r => typeof r === 'string' ? r : r.resourceType).join(', ')
-              : 'Waiting',
-            status: p.status || 'WAITING',
+              : 'Bed + Doctor',
+            status: activeInfo ? 'IN_TREATMENT' : (p.status || 'WAITING'),
             score: scoreVal.toFixed(1),
             originalScore: scoreVal,
             acuityBase: crit
@@ -67,7 +76,7 @@ export default function LiveQueue({ onFullDetails }) {
     patients.sort((a, b) => b.originalScore - a.originalScore);
     patients.forEach((p, i) => p.position = i + 1);
     return patients;
-  }, [queue]);
+  }, [queue, activeTreatments]);
 
   const filtered = useMemo(() => allPatients.filter(p => {
     const term = search.toLowerCase();

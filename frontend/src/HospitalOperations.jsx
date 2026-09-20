@@ -14,8 +14,10 @@ const DOCTOR_SPECIALTIES = [
 ];
 
 export default function HospitalOperations({ failure }) {
-  const { resourceStatus, resourceDetailed, configureResources, queue, simState } = useSimulationSocket();
+  const { resourceStatus, resourceDetailed, configureResources, activeTreatments, queue, simState } = useSimulationSocket();
   const activeFailure = failure !== 'No active failure';
+
+  const simTime = Math.floor(simState?.simTimeMinutes || 0);
 
   // --- Manage Resources Form State ---
   const [resourceCategory, setResourceCategory] = useState('DOCTOR');
@@ -28,11 +30,11 @@ export default function HospitalOperations({ failure }) {
   const [openDepts, setOpenDepts] = useState({
     EMERGENCY_ER: true,
     CARDIOLOGY: true,
-    NEUROLOGY: false,
-    ORTHOPEDICS: false,
-    GENERAL_SURGERY: false,
-    PULMONOLOGY: false,
-    PEDIATRICS: false
+    NEUROLOGY: true,
+    ORTHOPEDICS: true,
+    GENERAL_SURGERY: true,
+    PULMONOLOGY: true,
+    PEDIATRICS: true
   });
 
   const toggleDept = (key) => {
@@ -97,6 +99,21 @@ export default function HospitalOperations({ failure }) {
   const availEquip = (resourceStatus?.['EQUIPMENT']?.available || 0) + (resourceStatus?.['AMBULANCE']?.available || 0);
   const busyEquip = totalEquip - availEquip;
 
+  // Active Treatment Patient Map by ID and by Allocated Resource ID
+  const activePatientsMap = useMemo(() => {
+    const byPatientId = new Map();
+    const byResourceId = new Map();
+    if (Array.isArray(activeTreatments)) {
+      activeTreatments.forEach(ap => {
+        byPatientId.set(ap.id, ap);
+        if (Array.isArray(ap.allocatedResourceIds)) {
+          ap.allocatedResourceIds.forEach(resId => byResourceId.set(resId, ap));
+        }
+      });
+    }
+    return { byPatientId, byResourceId };
+  }, [activeTreatments]);
+
   // Group Doctors by Specialization
   const doctorsByDept = useMemo(() => {
     const map = {};
@@ -105,61 +122,93 @@ export default function HospitalOperations({ failure }) {
     });
 
     if (Array.isArray(resourceDetailed)) {
-      resourceDetailed.filter(r => r.type === 'DOCTOR').forEach(doc => {
+      resourceDetailed.filter(r => (r.type || r.resourceType) === 'DOCTOR').forEach(doc => {
         const spec = doc.specialization || 'EMERGENCY_ER';
         if (!map[spec]) map[spec] = [];
         
         let activity = 'Free · Ready for patient intake';
-        if (doc.status === 'BUSY' || doc.status === 'CONSULTING') {
-          activity = doc.currentPatientId 
-            ? `Consulting Patient ${doc.currentPatientId} · Treatment in progress`
-            : `Assigned to active patient treatment`;
+        let patientInfo = null;
+
+        const assignedPat = doc.currentPatientId 
+          ? activePatientsMap.byPatientId.get(doc.currentPatientId)
+          : activePatientsMap.byResourceId.get(doc.id);
+
+        if (assignedPat || doc.status === 'BUSY' || doc.status === 'CONSULTING') {
+          if (assignedPat) {
+            const startTime = assignedPat.treatmentStartTime || simTime;
+            const duration = assignedPat.treatmentDuration || 30;
+            const endTime = assignedPat.treatmentEndTime || (startTime + duration);
+            const remaining = Math.max(0, endTime - simTime);
+            activity = `Treating ${assignedPat.id} (${assignedPat.name}) · ${remaining}m left`;
+            patientInfo = { id: assignedPat.id, name: assignedPat.name, department: assignedPat.department, remaining };
+          } else {
+            activity = doc.currentPatientId 
+              ? `Consulting Patient ${doc.currentPatientId} · Treatment in progress`
+              : `Assigned to active patient treatment`;
+          }
         }
 
         map[spec].push({
           id: doc.id,
           name: doc.name || `Dr. ${doc.id}`,
-          status: doc.status || 'AVAILABLE',
-          patientId: doc.currentPatientId || null,
-          activity: activity
+          status: (doc.status === 'BUSY' || doc.status === 'CONSULTING' || assignedPat) ? 'CONSULTING' : 'AVAILABLE',
+          patientId: doc.currentPatientId || assignedPat?.id || null,
+          patientInfo,
+          activity
         });
       });
     }
     return map;
-  }, [resourceDetailed]);
+  }, [resourceDetailed, activePatientsMap, simTime]);
 
   // Extract Nurses
   const nursesList = useMemo(() => {
     if (!Array.isArray(resourceDetailed)) return [];
-    return resourceDetailed.filter(r => r.type === 'NURSE').map(n => {
+    return resourceDetailed.filter(r => (r.type || r.resourceType) === 'NURSE').map(n => {
+      const assignedPat = n.currentPatientId 
+        ? activePatientsMap.byPatientId.get(n.currentPatientId)
+        : activePatientsMap.byResourceId.get(n.id);
+
       let activity = 'Free · Stationed at General Ward';
-      if (n.status === 'BUSY' || n.status === 'CONSULTING') {
-        activity = n.currentPatientId 
-          ? `On Duty · Assisting Patient ${n.currentPatientId}` 
-          : `On Duty · Assigned to Care Unit`;
+      if (assignedPat || n.status === 'BUSY' || n.status === 'CONSULTING') {
+        if (assignedPat) {
+          activity = `Assisting ${assignedPat.id} (${assignedPat.name}) · ${assignedPat.department}`;
+        } else {
+          activity = n.currentPatientId 
+            ? `On Duty · Assisting Patient ${n.currentPatientId}` 
+            : `On Duty · Assigned to Care Unit`;
+        }
       }
       return {
         id: n.id,
         name: n.name || `Nurse ${n.id}`,
         unit: n.specialization || 'GENERAL',
-        status: n.status || 'AVAILABLE',
-        patientId: n.currentPatientId || null,
-        activity: activity
+        status: (n.status === 'BUSY' || n.status === 'CONSULTING' || assignedPat) ? 'BUSY' : 'AVAILABLE',
+        patientId: n.currentPatientId || assignedPat?.id || null,
+        activity
       };
     });
-  }, [resourceDetailed]);
+  }, [resourceDetailed, activePatientsMap]);
 
-  // Extract Rooms and Equipment
+  // Extract Rooms and Beds
   const roomsList = useMemo(() => {
     if (!Array.isArray(resourceDetailed)) return [];
-    return resourceDetailed.filter(r => ['BED', 'ICU_BED', 'OT'].includes(r.type)).map(room => ({
-      id: room.id,
-      name: room.name || room.id,
-      type: room.type === 'ICU_BED' ? 'ICU Bed' : room.type === 'OT' ? 'Operating Room' : 'General Bed',
-      status: room.status || 'AVAILABLE',
-      patientId: room.currentPatientId || '—'
-    }));
-  }, [resourceDetailed]);
+    return resourceDetailed.filter(r => ['BED', 'ICU_BED', 'OT'].includes(r.type || r.resourceType)).map(room => {
+      const assignedPat = room.currentPatientId 
+        ? activePatientsMap.byPatientId.get(room.currentPatientId)
+        : activePatientsMap.byResourceId.get(room.id);
+
+      const isOccupied = room.status === 'BUSY' || room.status === 'OCCUPIED' || !!assignedPat;
+
+      return {
+        id: room.id,
+        name: room.name || room.id,
+        type: (room.type || room.resourceType) === 'ICU_BED' ? 'ICU Bed' : (room.type || room.resourceType) === 'OT' ? 'Operating Suite' : 'General Bed',
+        status: isOccupied ? 'BUSY' : 'AVAILABLE',
+        patientId: assignedPat ? `${assignedPat.id} (${assignedPat.name})` : (room.currentPatientId || '—')
+      };
+    });
+  }, [resourceDetailed, activePatientsMap]);
 
   return <div className="operations-page">
     <section className="operations-intro">
